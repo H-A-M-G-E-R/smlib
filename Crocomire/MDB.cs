@@ -195,6 +195,14 @@ namespace Crocomire
             public int y;
         }
 
+        public LevelData()
+        {
+            Layer1 = new Block[1, 1];
+            Layer2 = new Block[1, 1];
+            Doors = new List<Door>();
+            Size = 0;
+        }
+
         public LevelData(byte[] data, int width, int height)
         {
             int w = (width * 16);

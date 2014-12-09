@@ -10,13 +10,15 @@ namespace Crocomire
     class ROMHandler
     {
         private string _fileName;
+        private Disassembler _disAsm;
         private BinaryReader _bReader;
         private BinaryWriter _bWriter;
         public List<MDB> MDBList { get; set; }
 
         public ROMHandler(string fileName)
         {
-            _fileName = fileName;            
+            _fileName = fileName;
+            _disAsm = new Disassembler();
         }
 
         public void Read()
@@ -124,9 +126,16 @@ namespace Crocomire
                         rs.LayerHandling = _bReader.ReadUInt16();
                     }
 
-                    _bReader.BaseStream.Seek(Lunar.ToPC(m.RoomState[0].RoomData), SeekOrigin.Begin);
-                    byte[] decompressed = Lunar.Decompress(_bReader.ReadBytes(0x10000));
-                    m.LevelData = new LevelData(decompressed, m.Width, m.Height);
+                    try
+                    {
+                        _bReader.BaseStream.Seek(Lunar.ToPC(m.RoomState[0].RoomData), SeekOrigin.Begin);
+                        byte[] decompressed = Lunar.Decompress(_bReader.ReadBytes(0x10000));
+                        m.LevelData = new LevelData(decompressed, m.Width, m.Height);
+                    }
+                    catch
+                    {
+                        m.LevelData = new LevelData();
+                    }
                     
                     /* read MDB DoorOut */
                     _bReader.BaseStream.Seek(0x070000 + m.DoorOut, SeekOrigin.Begin);
@@ -155,21 +164,13 @@ namespace Crocomire
                         ddb.Code = _bReader.ReadUInt16();
 
                         /* read door ASM */
-                        if (ddb.Code != 0x0000 && ddb.Code != 0x8000)
+                        if (ddb.Code > 0x8000)
                         {
                             _bReader.BaseStream.Seek(Lunar.ToPC((uint)(0x8F0000 + ddb.Code)), SeekOrigin.Begin);
-                            byte[] tmp = new byte[0xFFFF];
-                            int i = 0;
-                            for(i = 0; i < 0xFFFF; i++)
-                            {
-                                byte b = _bReader.ReadByte();
-                                tmp[i] = b;
-                                if (b == 0x60 && tmp[i-1] == 0x28)
-                                    break;
-                            }
-
-                            ddb.DoorASM = new byte[i + 1];
-                            Array.Copy(tmp, ddb.DoorASM, i + 1);
+                            byte[] tmp = new byte[0x1000];
+                            tmp = _bReader.ReadBytes(0x1000);
+                            var code = _disAsm.Disassemble(tmp);
+                            ddb.DoorASM = code;    
                         }
                     }
 
@@ -456,35 +457,35 @@ namespace Crocomire
                     }
 
                     /* write enemy pop */
-                    _bWriter.Seek((int)Lunar.ToPC((uint)0xA10000 + roomState.EnemyPop), SeekOrigin.Begin);
-                    foreach(var enemyPop in roomState.EnemyPopList)
+                    if (roomState.EnemyPop != 0x0000)
                     {
-                        _bWriter.Write(enemyPop.EnemyData);
-                        _bWriter.Write(enemyPop.X);
-                        _bWriter.Write(enemyPop.Y);
-                        _bWriter.Write(enemyPop.InitialGFX);
-                        _bWriter.Write(enemyPop.Prop1);
-                        _bWriter.Write(enemyPop.Prop2);
-                        _bWriter.Write(enemyPop.RoomArg1);
-                        _bWriter.Write(enemyPop.RoomArg2);
-                    }
+                        _bWriter.Seek((int)Lunar.ToPC((uint)0xA10000 + roomState.EnemyPop), SeekOrigin.Begin);
+                        foreach (var enemyPop in roomState.EnemyPopList)
+                        {
+                            _bWriter.Write(enemyPop.EnemyData);
+                            _bWriter.Write(enemyPop.X);
+                            _bWriter.Write(enemyPop.Y);
+                            _bWriter.Write(enemyPop.InitialGFX);
+                            _bWriter.Write(enemyPop.Prop1);
+                            _bWriter.Write(enemyPop.Prop2);
+                            _bWriter.Write(enemyPop.RoomArg1);
+                            _bWriter.Write(enemyPop.RoomArg2);
+                        }
 
-                    if(roomState.EnemyPopList.Count > 0)
-                    {
                         _bWriter.Write((ushort)0xFFFF);
                         _bWriter.Write((byte)roomState.EnemiesToKill);
                     }
 
                     /* write enemy set */
-                    _bWriter.Seek((int)Lunar.ToPC((uint)0xB40000 + roomState.EnemySet), SeekOrigin.Begin);
-                    foreach (var enemySet in roomState.EnemySetList)
+                    if (roomState.EnemySet != 0x0000)
                     {
-                        _bWriter.Write(enemySet.EnemyUsed);
-                        _bWriter.Write(enemySet.Palette);
-                    }
+                        _bWriter.Seek((int)Lunar.ToPC((uint)0xB40000 + roomState.EnemySet), SeekOrigin.Begin);
+                        foreach (var enemySet in roomState.EnemySetList)
+                        {
+                            _bWriter.Write(enemySet.EnemyUsed);
+                            _bWriter.Write(enemySet.Palette);
+                        }
 
-                    if (roomState.EnemySetList.Count > 0)
-                    {
                         _bWriter.Write((ushort)0xFFFF);
                     }
                 }
@@ -510,17 +511,20 @@ namespace Crocomire
                     _bWriter.Write(ddb.Distance);
                     _bWriter.Write(ddb.Code);
 
-                    if(ddb.Code != 0x0000 && ddb.Code != 0x8000)
+                    if(ddb.DoorASM != null && ddb.Code > 0x8000)
                     {
                         _bWriter.Seek((int)Lunar.ToPC((uint)0x8F0000 + ddb.Code), SeekOrigin.Begin);
-                        //_bWriter.Write(ddb.DoorASM);
+                        _bWriter.Write(ddb.DoorASM);
                     }
                 }
 
                 /* write level data */
-                byte[] compressedData = Lunar.Compress(room.LevelData.RawData);
-                _bWriter.Seek((int)Lunar.ToPC(room.RoomState[0].RoomData), SeekOrigin.Begin);
-                _bWriter.Write(compressedData);
+                if (room.LevelData.Size > 0)
+                {
+                    byte[] compressedData = Lunar.Compress(room.LevelData.RawData);
+                    _bWriter.Seek((int)Lunar.ToPC(room.RoomState[0].RoomData), SeekOrigin.Begin);
+                    _bWriter.Write(compressedData);
+                }
             }
         }
     }

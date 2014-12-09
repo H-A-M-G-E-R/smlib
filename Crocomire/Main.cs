@@ -23,7 +23,7 @@ namespace Crocomire
             
             handler.Read();            
             listBox1.Items.Clear();
-            listBox1.Items.AddRange(handler.MDBList.Select(x => String.Format("{0} -> w: {1}, h: {2}, doorout: {3:X}, roomstates: {4}, doors: {5}, plms: {6}", new object[] { x.RoomId, x.Width, x.Height, x.DoorOut, x.RoomState.Count, x.DDB.Count, x.RoomState[0].PLMList.Count })).ToArray());
+            listBox1.Items.AddRange(handler.MDBList.Select(x => String.Format("{0} -> w: {1}, h: {2}, doorout: {3:X}, roomstates: {4}, doors: {5}, plms: {6}, s: {7}", new object[] { x.RoomId, x.Width, x.Height, x.DoorOut, x.RoomState.Count, x.DDB.Count, x.RoomState[0].PLMList.Count, x.LevelData.Size })).ToArray());
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -35,38 +35,14 @@ namespace Crocomire
         {
             handler.Read();
 
-            var parlor = handler.MDBList.Where(x => x.RoomAddress == 0x92FD).First();            
+            /* get parlor */
 
-            /* relocate/repoint parlor */
-            parlor.RoomAddress = 0xF000;
-            parlor.RoomId = "7F000";
-            parlor.DoorOut = 0xFEE0;
+            var parlor = handler.MDBList.Where(x => x.RoomId == "792FD").First();
+            var mainStreetDoor = parlor.DDB.Where(x => x.RoomId == 0x93AA).First();
 
-            ushort plm = 0xFC00;
-            ushort scroll = 0xFA00;
+            /* change where this door goes */
+            mainStreetDoor.RoomId = 0x92B3;
 
-
-            foreach (var roomState in parlor.RoomState)
-            {
-                roomState.PLM = plm;
-                roomState.Scroll = scroll;
-                roomState.RoomData = 0xCEB330;
-
-                plm += (ushort)((roomState.PLMList.Count * 6) + 4);
-                scroll += (ushort)(roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length) + 0x10);
-            }     
-
-            /* find doors pointing to this room and repoint them */
-            foreach(var room in handler.MDBList)
-            {
-                foreach(var door in room.DDB)
-                {
-                    if(door.RoomId == 0x92FD)
-                    {
-                        door.RoomId = 0xF000;
-                    }
-                }
-            }
             handler.Write();
         }
     }
