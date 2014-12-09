@@ -33,16 +33,46 @@ namespace Crocomire
 
         private void button3_Click(object sender, EventArgs e)
         {
+            listBox1.Items.Clear();
+            listBox1.Items.Add("Opening ROM");
             handler.Read();
+            int i = 0;
+            foreach(var room in handler.MDBList)
+            {
+                foreach(var state in room.RoomState)
+                {
+                    i += state.PLMList.Count;
+                    state.PLMList.Clear();
+                }
+            }
+            listBox1.Items.Add(i.ToString() + " PLMs removed");
+            handler.Write();
+            listBox1.Items.Add("Closed ROM");
+        }
 
-            /* get parlor */
+        private void button4_Click(object sender, EventArgs e)
+        {
+            handler.Read();
+            var parlor = handler.MDBList.Where(r => r.RoomId == "792FD").First();
+            
+            /* change parlor top left door to be solid blocks */
+            parlor.LevelData.Layer1[0, 6].Clip = 0x08;
+            parlor.LevelData.Layer1[1, 6].Clip = 0x08;
+            parlor.LevelData.Layer1[0, 7].Clip = 0x08;
+            parlor.LevelData.Layer1[1, 7].Clip = 0x08;
+            parlor.LevelData.Layer1[0, 8].Clip = 0x08;
+            parlor.LevelData.Layer1[1, 8].Clip = 0x08;
+            parlor.LevelData.Layer1[0, 9].Clip = 0x08;
+            parlor.LevelData.Layer1[1, 9].Clip = 0x08;
 
-            var parlor = handler.MDBList.Where(x => x.RoomId == "792FD").First();
-            var mainStreetDoor = parlor.DDB.Where(x => x.RoomId == 0x93AA).First();
-
-            /* change where this door goes */
-            mainStreetDoor.RoomId = 0x92B3;
-
+            parlor.LevelData.Layer1[0, 6].BTS = 0x00;
+            parlor.LevelData.Layer1[1, 6].BTS = 0x00;
+            parlor.LevelData.Layer1[0, 7].BTS = 0x00;
+            parlor.LevelData.Layer1[1, 7].BTS = 0x00;
+            parlor.LevelData.Layer1[0, 8].BTS = 0x00;
+            parlor.LevelData.Layer1[1, 8].BTS = 0x00;
+            parlor.LevelData.Layer1[0, 9].BTS = 0x00;
+            parlor.LevelData.Layer1[1, 9].BTS = 0x00;
             handler.Write();
         }
     }

@@ -164,6 +164,8 @@ namespace Crocomire
                         int t = (o * 2) + 2;
                         int b = (Size + 2) + o;
 
+                        Layer1[x, y].Tile = (ushort)((Layer1[x, y].Clip << 12) + (Layer1[x, y].Tile & 0x0FFF));
+
                         data[t] = (byte)(Layer1[x, y].Tile & 0xFF);
                         data[t + 1] = (byte)((Layer1[x, y].Tile >> 8) & 0xFF);
                         data[b] = Layer1[x, y].BTS;
