@@ -21,7 +21,6 @@ namespace Crocomire
         public byte Unknown2 { get; set; }
         public byte Unknown3 { get; set; }
         public byte Unknown4 { get; set; }
-        public List<StateSelect> StateSelect { get; set; }
         public List<RoomState> RoomState { get; set; }
         public LevelData LevelData { get; set; }
         public List<DDB> DDB { get; set; }
@@ -30,7 +29,6 @@ namespace Crocomire
 
         public MDB()
         {
-            StateSelect = new List<StateSelect>();
             RoomState = new List<RoomState>();
             DDB = new List<DDB>();
 
@@ -40,12 +38,14 @@ namespace Crocomire
     class StateSelect
     {
         public ushort RoomState { get; set; }
-        public ushort TestCode { get; set; }
-        public byte TestValue { get; set; }
+
     }
 
     class RoomState
     {
+        public ushort TestCode { get; set; }
+        public byte TestValue { get; set; }
+        public ushort Pointer { get; set; }
         public uint RoomData { get; set; }
         public byte GraphicsSet { get; set; }
         public ushort Music { get; set; }

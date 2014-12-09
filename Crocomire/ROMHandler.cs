@@ -65,8 +65,6 @@ namespace Crocomire
                     byte testValue;
                     ushort roomStatePtr;
                     ushort testCode = _bReader.ReadUInt16();
-                    int states = 1;
-
                     while(testCode != 0xE5E6)
                     {
                         if (testCode == 0xE612 || testCode == 0xE629)
@@ -76,17 +74,40 @@ namespace Crocomire
 
                         roomStatePtr = _bReader.ReadUInt16();
 
-                        var stateSelect = new StateSelect() { TestCode = testCode, TestValue = testValue, RoomState = roomStatePtr };
-                        m.StateSelect.Add(stateSelect);
+                        var ros = new RoomState();
+                        ros.TestCode = testCode;
+                        ros.TestValue = testValue;
+                        ros.Pointer = roomStatePtr;
 
-                        states++;
+                        m.RoomState.Add(ros);
+
                         testCode = _bReader.ReadUInt16();
                     }
 
-                    /* read MDB roomstates */
-                    for (int i = 0; i < states; i++)
+                    var ds = new RoomState();
+                    ds.TestCode = 0xE5E6;
+                    ds.TestValue = 0;
+                    ds.Pointer = 0xE5E6;
+                    data = _bReader.ReadBytes(3);
+                    ds.RoomData = (uint)((data[2] << 16) + (data[1] << 8) + data[0]);
+                    ds.GraphicsSet = _bReader.ReadByte();
+                    ds.Music = _bReader.ReadUInt16();
+                    ds.FX1 = _bReader.ReadUInt16();
+                    ds.EnemyPop = _bReader.ReadUInt16();
+                    ds.EnemySet = _bReader.ReadUInt16();
+                    ds.Layer2ScrollData = _bReader.ReadUInt16();
+                    ds.Scroll = _bReader.ReadUInt16();
+                    ds.Unused = _bReader.ReadUInt16();
+                    ds.FX2 = _bReader.ReadUInt16();
+                    ds.PLM = _bReader.ReadUInt16();
+                    ds.BGData = _bReader.ReadUInt16();
+                    ds.LayerHandling = _bReader.ReadUInt16();
+
+                    m.RoomState.Add(ds);
+
+                    foreach(var rs in m.RoomState.Where(r => r.Pointer != 0xE5E6))
                     {
-                        var rs = new RoomState();
+                        _bReader.BaseStream.Seek(0x070000 + rs.Pointer, SeekOrigin.Begin);
                         data = _bReader.ReadBytes(3);
                         rs.RoomData = (uint)((data[2] << 16) + (data[1] << 8) + data[0]);
                         rs.GraphicsSet = _bReader.ReadByte();
@@ -101,8 +122,6 @@ namespace Crocomire
                         rs.PLM = _bReader.ReadUInt16();
                         rs.BGData = _bReader.ReadUInt16();
                         rs.LayerHandling = _bReader.ReadUInt16();
-
-                        m.RoomState.Add(rs);
                     }
 
                     _bReader.BaseStream.Seek(Lunar.ToPC(m.RoomState[0].RoomData), SeekOrigin.Begin);
@@ -331,38 +350,41 @@ namespace Crocomire
                 _bWriter.Write(room.Unknown4);
                 _bWriter.Write(room.DoorOut);
 
-                /* Calculate state select block size */
-                int blockSize = 0;
-                foreach (var stateSelect in room.StateSelect)
+                foreach(var roomState in room.RoomState.Where(r => r.Pointer != 0xE5E6))
                 {
-                    blockSize += 2;
-                    if (stateSelect.TestCode == 0xE612 || stateSelect.TestCode == 0xE629)
+                    _bWriter.Write(roomState.TestCode);
+                    if (roomState.TestCode == 0xE612 || roomState.TestCode == 0xE629)
                     {
-                        blockSize++;
+                        _bWriter.Write(roomState.TestValue);
                     }
-                    blockSize += 2;
-                }
-                blockSize += 2;
-
-                ushort roomStateAddr = (ushort)(room.RoomAddress + 11 + blockSize + (26 * (room.StateSelect.Count)));
-
-                /* Write state select block */
-                foreach (var stateSelect in room.StateSelect)
-                {
-                    _bWriter.Write(stateSelect.TestCode);
-                    if (stateSelect.TestCode == 0xE612 || stateSelect.TestCode == 0xE629)
-                    {
-                        _bWriter.Write(stateSelect.TestValue);
-                    }
-                    //_bWriter.Write(stateSelect.RoomState);
-                    _bWriter.Write(roomStateAddr);
-                    roomStateAddr -= 26;
+                    _bWriter.Write(roomState.Pointer);
                 }
                 _bWriter.Write((ushort)0xE5E6);
+                
+                /* write default state */
+                var ds = room.RoomState.Where(r => r.Pointer == 0xE5E6).First();
+                _bWriter.Write((byte)(ds.RoomData & 0xFF));
+                _bWriter.Write((byte)((ds.RoomData >> 8) & 0xFF));
+                _bWriter.Write((byte)((ds.RoomData >> 16) & 0xFF));
+
+                _bWriter.Write(ds.GraphicsSet);
+                _bWriter.Write(ds.Music);
+                _bWriter.Write(ds.FX1);
+                _bWriter.Write(ds.EnemyPop);
+                _bWriter.Write(ds.EnemySet);
+                _bWriter.Write(ds.Layer2ScrollData);
+                _bWriter.Write(ds.Scroll);
+                _bWriter.Write(ds.Unused);
+                _bWriter.Write(ds.FX2);
+                _bWriter.Write(ds.PLM);
+                _bWriter.Write(ds.BGData);
+                _bWriter.Write(ds.LayerHandling);
+
 
                 /* write roomstates */
-                foreach(var roomState in room.RoomState)
+                foreach (var roomState in room.RoomState.Where(r => r.Pointer != 0xE5E6))
                 {
+                    _bWriter.BaseStream.Seek(0x070000 + roomState.Pointer, SeekOrigin.Begin);
                     _bWriter.Write((byte)(roomState.RoomData & 0xFF));
                     _bWriter.Write((byte)((roomState.RoomData >> 8) & 0xFF));
                     _bWriter.Write((byte)((roomState.RoomData >> 16) & 0xFF));
