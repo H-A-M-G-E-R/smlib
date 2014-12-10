@@ -120,5 +120,39 @@ namespace Crocomire
 
             handler.Write();
         }
+
+        private void listBox1_Click(object sender, EventArgs e)
+        {
+            string roomStr = (string)listBox1.SelectedItem;
+            string roomId = roomStr.Substring(0, 5);
+
+            var room = handler.MDBList.Where(r => r.RoomId == roomId).First();
+
+            Graphics g = pictureBox1.CreateGraphics();
+            g.Clear(Color.White);
+            for(int y = 0; y < room.RoomState[0].LevelData.Height; y++)
+                for(int x = 0; x < room.RoomState[0].LevelData.Width; x++)
+                {
+                    var clip = room.RoomState[0].LevelData.Layer1[x, y].Clip;
+                    var bts = room.RoomState[0].LevelData.Layer1[x, y].BTS;
+                    switch(clip)
+                    {
+                        case 0x08:
+                            g.FillRectangle(Brushes.Black, x*3, y*3, 3, 3);
+                            break;
+                        case 0x01:
+                            g.DrawRectangle(Pens.Green, x * 3, y * 3, 3, 3);
+                            break;
+                        case 0x09:
+                            g.DrawRectangle(Pens.Blue, x * 3, y * 3, 3, 3);
+                            break;
+                        case 0x00:
+                            break;
+                        default:
+                            g.DrawRectangle(Pens.Red, x*3, y*3, 3, 3);
+                            break;                        
+                    }
+                }
+        }
     }
 }
