@@ -22,7 +22,6 @@ namespace Crocomire
         public byte Unknown3 { get; set; }
         public byte Unknown4 { get; set; }
         public List<RoomState> RoomState { get; set; }
-        public LevelData LevelData { get; set; }
         public List<DDB> DDB { get; set; }
 
 
@@ -59,6 +58,7 @@ namespace Crocomire
         public ushort PLM { get; set; }
         public ushort BGData { get; set; }
         public ushort LayerHandling { get; set; }
+        public LevelData LevelData { get; set; }
 
         public byte[,] ScrollData { get; set; }
         public List<byte[]> ScrollMod { get; set; }

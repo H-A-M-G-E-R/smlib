@@ -126,28 +126,24 @@ namespace Crocomire
                         rs.LayerHandling = _bReader.ReadUInt16();
                     }
 
-                    try
-                    {
-                        _bReader.BaseStream.Seek(Lunar.ToPC(m.RoomState[0].RoomData), SeekOrigin.Begin);
-                        byte[] decompressed = Lunar.Decompress(_bReader.ReadBytes(0x10000));
-                        m.LevelData = new LevelData(decompressed, m.Width, m.Height);
-                    }
-                    catch
-                    {
-                        m.LevelData = new LevelData();
-                    }
-                    
+                   
                     /* read MDB DoorOut */
                     _bReader.BaseStream.Seek(0x070000 + m.DoorOut, SeekOrigin.Begin);
-                    int doors = (m.LevelData.Doors.Count > 0 ? m.LevelData.Doors.Max(d => d.Block.BTS) + 1 : 0);
-                    for (int i = 0; i < doors; i++)
+                    //int doors = (m.LevelData.Doors.Count > 0 ? m.LevelData.Doors.Max(d => d.Block.BTS) + 1 : 0);
+                    //for (int i = 0; i < doors; i++)
+                    //{
+                    while (true)
                     {
-                       //m.DoorOutPtr.Add(_bReader.ReadUInt16());
+                        //m.DoorOutPtr.Add(_bReader.ReadUInt16());
                         ushort pointer = _bReader.ReadUInt16();
+                        if (pointer == 0x0000)
+                            break;
+
                         var ddb = new DDB();
                         ddb.Pointer = pointer;
                         m.DDB.Add(ddb);
                     }
+                    //}
 
                     /* read DDB Doorout */
                     foreach(var ddb in m.DDB)
@@ -327,6 +323,26 @@ namespace Crocomire
                                 }
                             }
                         }
+
+                        try
+                        {
+                            /* see if we can get a reference to the level data from eariler read roomState data */
+                            var copyRoomState = m.RoomState.Where(r => r.RoomData == roomState.RoomData && r.LevelData != null).FirstOrDefault();
+                            if (copyRoomState != null)
+                            {
+                                roomState.LevelData = copyRoomState.LevelData;
+                            } 
+                            else
+                            {
+                                _bReader.BaseStream.Seek(Lunar.ToPC(roomState.RoomData), SeekOrigin.Begin);
+                                byte[] decompressed = Lunar.Decompress(_bReader.ReadBytes(0x10000));
+                                roomState.LevelData = new LevelData(decompressed, m.Width, m.Height);
+                            }
+                        }
+                        catch
+                        {
+                            roomState.LevelData = new LevelData();
+                        }
                     }
 
                     MDBList.Add(m);
@@ -488,6 +504,14 @@ namespace Crocomire
 
                         _bWriter.Write((ushort)0xFFFF);
                     }
+
+                    /* write level data */
+                    if (roomState.LevelData.Size > 0)
+                    {
+                        byte[] compressedData = Lunar.Compress(roomState.LevelData.RawData);
+                        _bWriter.Seek((int)Lunar.ToPC(roomState.RoomData), SeekOrigin.Begin);
+                        _bWriter.Write(compressedData);
+                    }
                 }
 
                 /* Write doorout block */
@@ -518,13 +542,7 @@ namespace Crocomire
                     }
                 }
 
-                /* write level data */
-                if (room.LevelData.Size > 0)
-                {
-                    byte[] compressedData = Lunar.Compress(room.LevelData.RawData);
-                    _bWriter.Seek((int)Lunar.ToPC(room.RoomState[0].RoomData), SeekOrigin.Begin);
-                    _bWriter.Write(compressedData);
-                }
+
             }
         }
     }
