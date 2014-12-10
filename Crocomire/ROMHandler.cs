@@ -14,11 +14,13 @@ namespace Crocomire
         private BinaryReader _bReader;
         private BinaryWriter _bWriter;
         public List<MDB> MDBList { get; set; }
+        public MemoryManager Mem { get; set; }
 
         public ROMHandler(string fileName)
         {
             _fileName = fileName;
             _disAsm = new Disassembler();
+            Mem = new MemoryManager();
         }
 
         public void Read()
@@ -33,6 +35,10 @@ namespace Crocomire
             _bWriter = new BinaryWriter(new FileStream(_fileName, FileMode.Open));
             WriteMDB();
             _bWriter.Close();
+        }
+
+        public void Clear()
+        {
         }
 
         private void ReadMDB()

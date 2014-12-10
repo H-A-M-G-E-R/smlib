@@ -75,5 +75,50 @@ namespace Crocomire
             parlor.RoomState[0].LevelData.Layer1[1, 9].BTS = 0x00;
             handler.Write();
         }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            handler.Read();
+
+            var terminator = handler.MDBList.Where(x => x.RoomId == "7990D").First();
+
+            /* get memory for MDB header, state select and default state */
+            terminator.RoomAddress = handler.Mem.Allocate(0x8F, 11 + terminator.StateSelectSize + 26);
+            terminator.DoorOut = handler.Mem.Allocate(0x8F, (4 * terminator.DDB.Count) + 4);
+
+            foreach(var door in terminator.DDB)
+            {
+                door.Pointer = handler.Mem.Allocate(0x83, 12);
+                if (door.DoorASM.Length > 0)
+                    door.Code = handler.Mem.Allocate(0x8F, door.DoorASM.Length);
+            }
+
+            foreach(var roomState in terminator.RoomState)
+            {
+                if(roomState.Pointer != 0xE5E6)
+                    roomState.Pointer = handler.Mem.Allocate(0x8F, 26);
+                
+                roomState.EnemyPop = handler.Mem.Allocate(0xA1, (18 * roomState.EnemyPopList.Count) + 3);
+                roomState.EnemySet = handler.Mem.Allocate(0xB4, (6 * roomState.EnemySetList.Count) + 4);
+                roomState.FX1 = handler.Mem.Allocate(0x83, 16);
+                if (roomState.Scroll > 0x0000)
+                {
+                    roomState.Scroll = handler.Mem.Allocate(0x8F, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length) + 4);
+                }
+                roomState.PLM = handler.Mem.Allocate(0x8F, (6 * roomState.PLMList.Count) + 4);
+            }
+
+            /* repoint doors to lead to new room */
+            foreach(var room in handler.MDBList)
+            {
+                foreach(var ddb in room.DDB)
+                {
+                    if (ddb.RoomId == 0x990D)
+                        ddb.RoomId = terminator.RoomAddress;
+                }
+            }
+
+            handler.Write();
+        }
     }
 }

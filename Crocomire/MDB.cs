@@ -24,7 +24,22 @@ namespace Crocomire
         public List<RoomState> RoomState { get; set; }
         public List<DDB> DDB { get; set; }
 
-
+        public int StateSelectSize
+        {
+            get
+            {
+                int size = 0;
+                foreach(var roomState in RoomState.Where(r => r.TestCode != 0xE5E6))
+                {
+                    size += 4;
+                    if (roomState.TestCode == 0xE612 || roomState.TestCode == 0xE629)
+                    {
+                        size++;
+                    }
+                }
+                return size + 4;
+            }
+        }
 
         public MDB()
         {
