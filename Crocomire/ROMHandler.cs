@@ -32,7 +32,8 @@ namespace Crocomire
 
         public void Write()
         {
-            _bWriter = new BinaryWriter(new FileStream(_fileName, FileMode.Open));
+            File.Copy(_fileName, _fileName + ".out.smc", true);
+            _bWriter = new BinaryWriter(new FileStream(_fileName + ".out.smc", FileMode.Open));
             WriteMDB();
             _bWriter.Close();
         }
@@ -70,21 +71,25 @@ namespace Crocomire
                     m.DoorOut = _bReader.ReadUInt16();
                     
                     /* read MDB stateselect */
-                    byte testValue;
+
                     ushort roomStatePtr;
                     ushort testCode = _bReader.ReadUInt16();
                     while(testCode != 0xE5E6)
                     {
+                        byte testValue = 0;
+                        ushort testValueDoor = 0;
+
                         if (testCode == 0xE612 || testCode == 0xE629)
                             testValue = _bReader.ReadByte();
-                        else
-                            testValue = 0;
+                        else if (testCode == 0xE5EB)
+                            testValueDoor = _bReader.ReadUInt16();
 
                         roomStatePtr = _bReader.ReadUInt16();
 
                         var ros = new RoomState();
                         ros.TestCode = testCode;
                         ros.TestValue = testValue;
+                        ros.TestValueDoor = testValueDoor;
                         ros.Pointer = roomStatePtr;
 
                         m.RoomState.Add(ros);
@@ -108,7 +113,7 @@ namespace Crocomire
                     ds.Unused = _bReader.ReadUInt16();
                     ds.FX2 = _bReader.ReadUInt16();
                     ds.PLM = _bReader.ReadUInt16();
-                    ds.BGData = _bReader.ReadUInt16();
+                    ds.BGDataPtr = _bReader.ReadUInt16();
                     ds.LayerHandling = _bReader.ReadUInt16();
 
                     m.RoomState.Add(ds);
@@ -128,7 +133,7 @@ namespace Crocomire
                         rs.Unused = _bReader.ReadUInt16();
                         rs.FX2 = _bReader.ReadUInt16();
                         rs.PLM = _bReader.ReadUInt16();
-                        rs.BGData = _bReader.ReadUInt16();
+                        rs.BGDataPtr = _bReader.ReadUInt16();
                         rs.LayerHandling = _bReader.ReadUInt16();
                     }
 
@@ -330,6 +335,46 @@ namespace Crocomire
                             }
                         }
 
+                        if(roomState.BGDataPtr > 0x8000)
+                        {
+                            _bReader.BaseStream.Seek(Lunar.ToPC((uint)(0x8F0000 + roomState.BGDataPtr)), SeekOrigin.Begin);
+
+                            while(true)
+                            {
+                                /* read header */
+                                ushort header = _bReader.ReadUInt16();
+                                if (header != 0x04)
+                                    break;
+
+                                var bg = new BG();
+                                bg.Header = header;
+
+                                /* regular bg data */
+                                var ptr = _bReader.ReadBytes(3);
+                                bg.Pointer = (uint)((ptr[2] << 16) + (ptr[1] << 8) + ptr[0]);
+                                bg.Unknown = _bReader.ReadBytes(0x14);
+                                roomState.BGData.Add(bg);
+                            }
+
+                            /* loop through BGData and read in graphics */
+                            foreach (var bg in roomState.BGData)
+                            {
+                                _bReader.BaseStream.Seek(Lunar.ToPC(bg.Pointer), SeekOrigin.Begin);
+                                byte[] decompressed = Lunar.Decompress(_bReader.ReadBytes(0x10000));
+                                bg.Data = decompressed;
+                            }
+                        }
+
+                        /* layer 1_2 handling code */
+                        if(roomState.LayerHandling > 0x8000)
+                        {
+                            _bReader.BaseStream.Seek(Lunar.ToPC((uint)(0x8F0000 + roomState.LayerHandling)), SeekOrigin.Begin);
+                            byte[] tmp = new byte[0x1000];
+                            tmp = _bReader.ReadBytes(0x1000);
+                            var code = _disAsm.Disassemble(tmp);
+                            roomState.LayerHandlingCode = code;
+                        }
+
                         try
                         {
                             /* see if we can get a reference to the level data from eariler read roomState data */
@@ -380,6 +425,11 @@ namespace Crocomire
                     {
                         _bWriter.Write(roomState.TestValue);
                     }
+                    else if(roomState.TestCode == 0xE5EB)
+                    {
+                        _bWriter.Write(roomState.TestValueDoor);
+                    }
+
                     _bWriter.Write(roomState.Pointer);
                 }
                 _bWriter.Write((ushort)0xE5E6);
@@ -400,7 +450,7 @@ namespace Crocomire
                 _bWriter.Write(ds.Unused);
                 _bWriter.Write(ds.FX2);
                 _bWriter.Write(ds.PLM);
-                _bWriter.Write(ds.BGData);
+                _bWriter.Write(ds.BGDataPtr);
                 _bWriter.Write(ds.LayerHandling);
 
 
@@ -422,7 +472,7 @@ namespace Crocomire
                     _bWriter.Write(roomState.Unused);
                     _bWriter.Write(roomState.FX2);
                     _bWriter.Write(roomState.PLM);
-                    _bWriter.Write(roomState.BGData);
+                    _bWriter.Write(roomState.BGDataPtr);
                     _bWriter.Write(roomState.LayerHandling);
                 }
 
@@ -509,6 +559,34 @@ namespace Crocomire
                         }
 
                         _bWriter.Write((ushort)0xFFFF);
+                    }
+
+                    /* write bg data */
+                    if(roomState.BGDataPtr > 0x8000)
+                    {
+                        _bWriter.Seek((int)Lunar.ToPC((uint)0x8F0000 + roomState.BGDataPtr), SeekOrigin.Begin);
+                        foreach (var bg in roomState.BGData)
+                        {
+                            _bWriter.Write(bg.Header);
+                            _bWriter.Write((byte)(bg.Pointer & 0xFF));
+                            _bWriter.Write((byte)((bg.Pointer >> 8) & 0xFF));
+                            _bWriter.Write((byte)((bg.Pointer >> 16) & 0xFF));
+                            _bWriter.Write(bg.Unknown);
+                        }
+
+                        foreach (var bg in roomState.BGData)
+                        {
+                            _bWriter.Seek((int)Lunar.ToPC(bg.Pointer), SeekOrigin.Begin);
+                            byte[] compressedData = Lunar.Compress(bg.Data);
+                            _bWriter.Write(compressedData);
+                        }
+                    }
+
+                    /* layer 1_2 handling code */
+                    if (roomState.LayerHandling > 0x8000)
+                    {
+                        _bWriter.BaseStream.Seek(Lunar.ToPC((uint)(0x8F0000 + roomState.LayerHandling)), SeekOrigin.Begin);
+                        _bWriter.Write(roomState.LayerHandlingCode);
                     }
 
                     /* write level data */

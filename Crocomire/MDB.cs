@@ -59,6 +59,7 @@ namespace Crocomire
     {
         public ushort TestCode { get; set; }
         public byte TestValue { get; set; }
+        public ushort TestValueDoor { get; set; }
         public ushort Pointer { get; set; }
         public uint RoomData { get; set; }
         public byte GraphicsSet { get; set; }
@@ -71,11 +72,14 @@ namespace Crocomire
         public ushort Unused { get; set; }
         public ushort FX2 { get; set; }
         public ushort PLM { get; set; }
-        public ushort BGData { get; set; }
+        public ushort BGDataPtr { get; set; }
         public ushort LayerHandling { get; set; }
+        public byte[] LayerHandlingCode { get; set; }
         public LevelData LevelData { get; set; }
 
         public byte[,] ScrollData { get; set; }
+        public List<BG> BGData { get; set; }
+
         public List<byte[]> ScrollMod { get; set; }
         public List<PLM> PLMList { get; set; }
         
@@ -90,9 +94,19 @@ namespace Crocomire
             PLMList = new List<PLM>();
             EnemyPopList = new List<EnemyPop>();
             EnemySetList = new List<EnemySet>();
+            BGData = new List<BG>();
             EnemiesToKill = 0;
             ScrollData = null;
         }
+    }
+
+    class BG
+    {
+        public ushort Header {get; set; }
+        public uint Pointer { get; set; }
+        public byte[] Unknown { get; set; }
+        public byte[] Data { get; set; }
+        public int Size { get { return 5 + Unknown.Length; } }
     }
 
     class PLM
@@ -163,7 +177,7 @@ namespace Crocomire
         {
             get
             {
-                int rawDataSize = 2 + Size + (Size / 2) + (Layer2.Length > 0 ? Layer2.Length * 2 : 0);
+                int rawDataSize = 2 + Size + (Size / 2) + (Layer2 != null && Layer2.Length > 0 ? Layer2.Length * 2 : 0);
                 int w = Width;
                 int h = Height;
 
@@ -185,7 +199,7 @@ namespace Crocomire
                         data[t + 1] = (byte)((Layer1[x, y].Tile >> 8) & 0xFF);
                         data[b] = Layer1[x, y].BTS;
 
-                        if (Layer2.Length > 0)
+                        if (Layer2 != null && Layer2.Length > 0)
                         {
                             int l2 = (Size + 2 + (Size / 2) + (o * 2));
                             data[l2] = (byte)(Layer2[x, y].Tile & 0xFF);
@@ -215,7 +229,6 @@ namespace Crocomire
         public LevelData()
         {
             Layer1 = new Block[1, 1];
-            Layer2 = new Block[1, 1];
             Doors = new List<Door>();
             Size = 0;
         }
@@ -228,7 +241,6 @@ namespace Crocomire
             Height = h;
             Width = w;
             Layer1 = new Block[w, h];
-            Layer2 = new Block[w, h];
             Doors = new List<Door>();
 
            // if (data.Length < 100)
@@ -249,6 +261,9 @@ namespace Crocomire
                     Layer1[x, y].Clip = (byte)((Layer1[x, y].Tile >> 12));
                     if(data.Count() > (Size + 2 + (Size/2)))
                     {
+                        if(Layer2 == null)
+                            Layer2 = new Block[w, h];
+
                         int l2 = (Size + 2 + (Size/2) + (o*2));
                         Layer2[x, y].Tile = (ushort)((data[l2 + 1] << 8) + data[l2]);
                     }

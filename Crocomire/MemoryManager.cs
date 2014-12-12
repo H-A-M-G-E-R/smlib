@@ -19,6 +19,26 @@ namespace Crocomire
             FreeMemory.Add(0x83, new List<Segment>() { new Segment(0xAD70, 0xFFFF) });
             FreeMemory.Add(0xB4, new List<Segment>() { new Segment(0xF4C0, 0xFFFF) });
             FreeMemory.Add(0xA1, new List<Segment>() { new Segment(0xEBE0, 0xFFFF) });
+
+            FreeMemory.Add(0xCE, new List<Segment>() { new Segment(0xB32D, 0xFFFF) });
+            FreeMemory.Add(0xDE, new List<Segment>() { new Segment(0xD1C0, 0xFFFF) });
+            FreeMemory.Add(0xDF, new List<Segment>() { new Segment(0xD4DF, 0xFFFF) });
+        }
+
+        /* allocate anywhere */
+        public uint Allocate(int size)
+        {
+            uint pointer = 0;
+            foreach(var bank in FreeMemory.Where(f => f.Key > 0xC0).OrderBy(f => f.Key))
+            {
+                pointer = Allocate(bank.Key, size);
+                if(pointer != 0)
+                {
+                    pointer = (uint)((bank.Key << 16) + pointer);
+                    return pointer;
+                }
+            }
+            return 0;
         }
 
         public ushort Allocate(int bank, int size)
