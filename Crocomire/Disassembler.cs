@@ -108,9 +108,16 @@ namespace Crocomire
                 }
             }
 
-            byte[] dest = new byte[l + 1];
-            Array.Copy(code, dest, l + 1);
-            return dest;
+            try
+            {
+                byte[] dest = new byte[l + 1];
+                Array.Copy(code, dest, l + 1);
+                return dest;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }

@@ -574,6 +574,8 @@ namespace Crocomire
                             _bWriter.Write(bg.Unknown);
                         }
 
+                        _bWriter.Write((ushort)0x0000);
+
                         foreach (var bg in roomState.BGData)
                         {
                             _bWriter.Seek((int)Lunar.ToPC(bg.Pointer), SeekOrigin.Begin);

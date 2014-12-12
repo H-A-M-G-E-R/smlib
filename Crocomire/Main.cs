@@ -20,7 +20,7 @@ namespace Crocomire
 
         private void button1_Click(object sender, EventArgs e)
         {
-            
+            handler = new ROMHandler("D:\\sm.smc");
             handler.Read();            
             listBox1.Items.Clear();
             listBox1.Items.AddRange(handler.MDBList.Select(x => String.Format("{0} -> w: {1}, h: {2}, doorout: {3:X}, roomstates: {4}, doors: {5}, plms: {6}, s: {7}", new object[] { x.RoomId, x.Width, x.Height, x.DoorOut, x.RoomState.Count, x.DDB.Count, x.RoomState[0].PLMList.Count, x.RoomState[0].LevelData.Size })).ToArray());
@@ -86,72 +86,86 @@ namespace Crocomire
 
         private void button6_Click(object sender, EventArgs e)
         {
+            string roomStr = (string)listBox1.SelectedItem;
+            string roomId = roomStr.Substring(0, 5);
             listBox1.Items.Clear();
             listBox1.Items.Add("Opening Z-Factor");
             var zFactor = new ROMHandler("D:\\zf.smc");
             zFactor.Read();
 
-            var zfParlor = zFactor.MDBList.Where(r => r.RoomId == "78391").First();
+
+            var zfParlor = zFactor.MDBList.Where(r => r.RoomId == roomId).First();
 
             listBox1.Items.Add("Opening SM");
-            handler.Read();
+            var sm = new ROMHandler("D:\\sm.smc");
+            sm.Read();
+
+            listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
+
 
             listBox1.Items.Add("Repointing/Relocating Room");
             /* get memory for MDB header, state select and default state */
-            zfParlor.RoomAddress = handler.Mem.Allocate(0x8F, 11 + zfParlor.StateSelectSize + 26);
-            zfParlor.DoorOut = handler.Mem.Allocate(0x8F, (4 * zfParlor.DDB.Count) + 4);
+            zfParlor.RoomAddress = sm.Mem.Allocate(0x8F, 11 + zfParlor.StateSelectSize + 26);
+            zfParlor.DoorOut = sm.Mem.Allocate(0x8F, (4 * zfParlor.DDB.Count) + 4);
 
             foreach (var door in zfParlor.DDB)
             {
-                door.Pointer = handler.Mem.Allocate(0x83, 12);
+                door.Pointer = sm.Mem.Allocate(0x83, 12);
                 door.RoomId = 0x92FD;
-                door.Code = 0x0000;
+                //door.Code = 0x0000;
                 if (door.DoorASM != null && door.DoorASM.Length > 0)
-                    door.Code = handler.Mem.Allocate(0x8F, door.DoorASM.Length);
+                    door.Code = sm.Mem.Allocate(0x8F, door.DoorASM.Length);
             }
 
             foreach (var roomState in zfParlor.RoomState)
             {
                 if (roomState.Pointer != 0xE5E6)
-                    roomState.Pointer = handler.Mem.Allocate(0x8F, 26);
+                    roomState.Pointer = sm.Mem.Allocate(0x8F, 26);
 
                 /* create new blank scrolling data for testing purposes */
-                for (int y = 0; y < zfParlor.Height; y++)
-                {
-                    for (int x = 0; x < zfParlor.Width; x++)
-                    {
-                       roomState.ScrollData[x, y] = 2;
-                    }
-                }
+                //if (roomState.Scroll > 0x8000)
+                //{
+                //    for (int y = 0; y < zfParlor.Height; y++)
+                //    {
+                //        for (int x = 0; x < zfParlor.Width; x++)
+                //        {
+                //            roomState.ScrollData[x, y] = 2;
+                //        }
+                //    }
+                //}
+
+                roomState.EnemyPopList.Clear();
+                roomState.EnemySetList.Clear();
+                roomState.PLMList.Clear();
 
                 /* clear this out for now, we'll use it later to allocate correctly */
                 roomState.RoomData = 0;
-                roomState.EnemyPop =  handler.Mem.Allocate(0xA1, (18 * roomState.EnemyPopList.Count) + 3);
-                roomState.EnemySet = handler.Mem.Allocate(0xB4, (6 * roomState.EnemySetList.Count) + 4);
-                roomState.FX1 = handler.Mem.Allocate(0x83, 16);
-                roomState.BGDataPtr = 0; // handler.Mem.Allocate(0x8F, roomState.BGData.Sum(bgd => bgd.Size));
-                roomState.LayerHandling = 0;
+                roomState.EnemyPop = sm.Mem.Allocate(0xA1, (18 * roomState.EnemyPopList.Count) + 3);
+                roomState.EnemySet = sm.Mem.Allocate(0xB4, (6 * roomState.EnemySetList.Count) + 4);
+                roomState.FX1 = sm.Mem.Allocate(0x83, 16);
+                roomState.FX2 = 0x0000;
+                roomState.BGDataPtr = sm.Mem.Allocate(0x8F, roomState.BGData.Sum(bgd => bgd.Size) + 2);
+                //roomState.LayerHandling = 0;
 
                 
                 if(roomState.LayerHandlingCode != null && roomState.LayerHandlingCode.Length > 0)
-                    roomState.LayerHandling = handler.Mem.Allocate(0x8F, roomState.LayerHandlingCode.Length);
+                    roomState.LayerHandling = sm.Mem.Allocate(0x8F, roomState.LayerHandlingCode.Length);
                 
                 
                 foreach(var bg in roomState.BGData)
                 {
                     /* compress data to get compressed size + 0x20 (for variance) */
                     var compressed = Lunar.Compress(bg.Data);
-                    bg.Pointer = handler.Mem.Allocate(compressed.Length + 0x20);
+                    bg.Pointer = sm.Mem.Allocate(compressed.Length + 0x20);
                 }
 
                 
                 if (roomState.Scroll > 0x0000)
                 {
-                    roomState.Scroll = handler.Mem.Allocate(0x8F, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length) + 4);
+                    roomState.Scroll = sm.Mem.Allocate(0x8F, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length) + 4);
                 }
 
-                roomState.PLMList.Clear();
-                roomState.PLM = handler.Mem.Allocate(0x8F, (6 * roomState.PLMList.Count) + 4);
+                roomState.PLM = sm.Mem.Allocate(0x8F, (6 * roomState.PLMList.Count) + 4);
             }
 
             foreach (var roomState in zfParlor.RoomState)
@@ -159,26 +173,41 @@ namespace Crocomire
                 if (roomState.RoomData == 0)
                 {
                     var compressed = Lunar.Compress(roomState.LevelData.RawData);
-                    roomState.RoomData = handler.Mem.Allocate(compressed.Length + 0x20);
+                    roomState.RoomData = sm.Mem.Allocate(compressed.Length + 0x20);
                 }
             }
 
-            handler.MDBList.Add(zfParlor);
+            sm.MDBList.Add(zfParlor);
 
             /* repoint doors to lead to new room */
-            var parlor = handler.MDBList.Where(r => r.RoomId == "792FD").First();
+            var parlor = sm.MDBList.Where(r => r.RoomId == "792FD").First();
             foreach (var ddb in parlor.DDB)
             {
                 if (ddb.RoomId == 0x990D)
                 {
                     ddb.RoomId = zfParlor.RoomAddress;
-                    ddb.X = 2;
-                    ddb.Y = 1;
+                    ddb.X = Convert.ToByte(txtDoorX.Text);
+                    ddb.Y = Convert.ToByte(txtDoorY.Text);
                     ddb.Code = 0x0000;
                 }
             }
+            listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
             listBox1.Items.Add("Saving new ROM");
-            handler.Write();
+            sm.Write();
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            handler = new ROMHandler("D:\\zf.smc");
+            handler.Read();
+            listBox1.Items.Clear();
+            listBox1.Items.AddRange(handler.MDBList.Select(x => String.Format("{0} -> w: {1}, h: {2}, doorout: {3:X}, roomstates: {4}, doors: {5}, plms: {6}, s: {7}", new object[] { x.RoomId, x.Width, x.Height, x.DoorOut, x.RoomState.Count, x.DDB.Count, x.RoomState[0].PLMList.Count, x.RoomState[0].LevelData.Size })).ToArray());
+
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
