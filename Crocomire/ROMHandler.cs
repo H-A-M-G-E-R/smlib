@@ -34,12 +34,176 @@ namespace Crocomire
         {
             File.Copy(_fileName, _fileName + ".out.smc", true);
             _bWriter = new BinaryWriter(new FileStream(_fileName + ".out.smc", FileMode.Open));
+            cleanRom();
             WriteMDB();
             _bWriter.Close();
         }
 
-        public void Clear()
+        /* writes 0xFF to all segments of free space */
+        private void cleanRom()
         {
+            foreach(var bank in Mem.FreeMemory)
+            {
+                foreach(var segment in bank.Value)
+                {
+                    _bWriter.Seek((int)Lunar.ToPC((uint)(bank.Key << 16) + segment.Start), SeekOrigin.Begin);
+                    for (int i = 0; i < segment.Size; i++)
+                        _bWriter.Write((byte)0xFF);
+                }
+            }
+        }
+
+
+        public void RemoveRoom(MDB room)
+        {
+            Mem.Free(0x8F, room.RoomAddress, 11 + room.StateSelectSize + 26);
+            Mem.Free(0x8F, room.DoorOut, (4 * room.DDB.Count) + 4);
+
+            foreach (var door in room.DDB)
+            {
+                Mem.Free(0x83, door.Pointer, 12);
+                if (door.DoorASM != null && door.DoorASM.Length > 0)
+                    Mem.Free(0x8F, door.Code, door.DoorASM.Length);
+            }
+
+            foreach (var roomState in room.RoomState)
+            {
+                if (roomState.Pointer != 0xE5E6)
+                    Mem.Free(0x8F, roomState.Pointer, 26);
+
+                /* clear this out for now, we'll use it later to allocate correctly */
+                if(roomState.EnemyPop > 0x8000)
+                    Mem.Free(0xA1, roomState.EnemyPop, (18 * roomState.EnemyPopList.Count) + 3);
+                
+                if(roomState.EnemySet > 0x8000)
+                    Mem.Free(0xB4, roomState.EnemySet, (6 * roomState.EnemySetList.Count) + 4);
+                
+                //if(roomState.FX1 > 0x8000)
+                //    Mem.Free(0x83, roomState.FX1, 16);
+
+                //if (roomState.BGDataPtr > 0x8000)
+                //    Mem.Free(0x8F, roomState.BGDataPtr, roomState.BGData.Sum(bgd => bgd.Size) + 2);
+
+
+                if (roomState.LayerHandlingCode != null && roomState.LayerHandlingCode.Length > 0)
+                    Mem.Free(0x8F, roomState.LayerHandling, roomState.LayerHandlingCode.Length);
+
+                /*
+                foreach (var bg in roomState.BGData)
+                {
+                    var compressed = Lunar.Compress(bg.Data);
+                    Mem.Free((int)(bg.Pointer >> 16), (ushort)(bg.Pointer & 0xFFFF), compressed.Length);
+                }
+                */
+
+                if (roomState.Scroll > 0x0000)
+                {
+                    Mem.Free(0x8F, roomState.Scroll, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length) + 4);
+                }
+
+                if (roomState.PLM > 0x8000)
+                    Mem.Free(0x8F, roomState.PLM, (6 * roomState.PLMList.Count) + 4);
+            }
+
+            foreach (var roomState in room.RoomState)
+            {
+                var compressed = Lunar.Compress(roomState.LevelData.RawData);
+                Mem.Free((int)(roomState.RoomData >> 16), (ushort)(roomState.RoomData & 0xFFFF), compressed.Length);
+            }
+
+            MDBList.Remove(room);
+        }
+
+        /* adds a new room to the MDBList with complete relocating */
+        public void AddRoom(MDB room)
+        {
+            /* get memory for MDB header, state select and default state */
+            room.RoomAddress = Mem.Allocate(0x8F, 11 + room.StateSelectSize + 26);
+            room.DoorOut = Mem.Allocate(0x8F, (4 * room.DDB.Count) + 4);
+
+            foreach (var door in room.DDB)
+            {
+                door.Pointer = Mem.Allocate(0x83, 12);
+                door.RoomId = 0x92FD;
+                //door.Code = 0x0000;
+                if (door.DoorASM != null && door.DoorASM.Length > 0)
+                    door.Code = Mem.Allocate(0x8F, door.DoorASM.Length);
+            }
+
+            foreach (var roomState in room.RoomState)
+            {
+                if (roomState.Pointer != 0xE5E6)
+                    roomState.Pointer = Mem.Allocate(0x8F, 26);
+
+                /* create new blank scrolling data for testing purposes (only needed for z-factor) */
+                //if (roomState.Scroll > 0x8000)
+                //{
+                //    for (int y = 0; y < zfParlor.Height; y++)
+                //    {
+                //        for (int x = 0; x < zfParlor.Width; x++)
+                //        {
+                //            roomState.ScrollData[x, y] = 2;
+                //        }
+                //    }
+                //}
+
+                /* remove invalid enemies */
+                foreach (var enemy in roomState.EnemyPopList.ToList())
+                {
+                    if (enemy.EnemyData > 0xF793)
+                    {
+                        roomState.EnemyPopList.Remove(enemy);
+                        var enemySet = roomState.EnemySetList.Where(es => es.EnemyUsed == enemy.EnemyData).FirstOrDefault();
+                        if (enemySet != null)
+                        {
+                            roomState.EnemySetList.Remove(enemySet);
+                        }
+                    }
+                }
+
+                //roomState.PLMList.Clear();
+
+                /* clear this out for now, we'll use it later to allocate correctly */
+                roomState.RoomData = 0;
+                roomState.EnemyPop = Mem.Allocate(0xA1, (18 * roomState.EnemyPopList.Count) + 3);
+                roomState.EnemySet = Mem.Allocate(0xB4, (6 * roomState.EnemySetList.Count) + 4);
+                roomState.FX1 = Mem.Allocate(0x83, 16);
+                //roomState.FX2 = 0x0000;
+                roomState.BGDataPtr = Mem.Allocate(0x8F, roomState.BGData.Sum(bgd => bgd.Size) + 2);
+                //roomState.LayerHandling = 0;
+
+
+                if (roomState.LayerHandlingCode != null && roomState.LayerHandlingCode.Length > 0)
+                    roomState.LayerHandling = Mem.Allocate(0x8F, roomState.LayerHandlingCode.Length);
+
+
+                foreach (var bg in roomState.BGData)
+                {
+                    /* compress data to get compressed size + 0x20 (for variance) */
+                    var compressed = Lunar.Compress(bg.Data);
+                    bg.Pointer = Mem.Allocate(compressed.Length + 0x20);
+                }
+
+
+                if (roomState.Scroll > 0x0000)
+                {
+                    roomState.Scroll = Mem.Allocate(0x8F, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length) + 4);
+                }
+
+                roomState.PLM = Mem.Allocate(0x8F, (6 * roomState.PLMList.Count) + 4);
+            }
+
+            foreach (var roomState in room.RoomState)
+            {
+                if (roomState.RoomData == 0)
+                {
+                    var compressed = Lunar.Compress(roomState.LevelData.RawData);
+                    roomState.RoomData = Mem.Allocate(compressed.Length + 0x20);
+                }
+            }
+
+            MDBList.Add(room);
+
         }
 
         private void ReadMDB()
@@ -138,49 +302,6 @@ namespace Crocomire
                     }
 
                    
-                    /* read MDB DoorOut */
-                    _bReader.BaseStream.Seek(0x070000 + m.DoorOut, SeekOrigin.Begin);
-                    //int doors = (m.LevelData.Doors.Count > 0 ? m.LevelData.Doors.Max(d => d.Block.BTS) + 1 : 0);
-                    //for (int i = 0; i < doors; i++)
-                    //{
-                    while (true)
-                    {
-                        //m.DoorOutPtr.Add(_bReader.ReadUInt16());
-                        ushort pointer = _bReader.ReadUInt16();
-                        if (pointer == 0x0000)
-                            break;
-
-                        var ddb = new DDB();
-                        ddb.Pointer = pointer;
-                        m.DDB.Add(ddb);
-                    }
-                    //}
-
-                    /* read DDB Doorout */
-                    foreach(var ddb in m.DDB)
-                    {
-                        _bReader.BaseStream.Seek(Lunar.ToPC((uint)(0x830000 + ddb.Pointer)), SeekOrigin.Begin);
-                        ddb.RoomId = _bReader.ReadUInt16();
-                        ddb.Bitflags = _bReader.ReadByte();
-                        ddb.Index = _bReader.ReadByte();
-                        ddb.CloseX = _bReader.ReadByte();
-                        ddb.CloseY = _bReader.ReadByte();
-                        ddb.X = _bReader.ReadByte();
-                        ddb.Y = _bReader.ReadByte();
-                        ddb.Distance = _bReader.ReadUInt16();
-                        ddb.Code = _bReader.ReadUInt16();
-
-                        /* read door ASM */
-                        if (ddb.Code > 0x8000)
-                        {
-                            _bReader.BaseStream.Seek(Lunar.ToPC((uint)(0x8F0000 + ddb.Code)), SeekOrigin.Begin);
-                            byte[] tmp = new byte[0x1000];
-                            tmp = _bReader.ReadBytes(0x1000);
-                            var code = _disAsm.Disassemble(tmp);
-                            ddb.DoorASM = code;    
-                        }
-                    }
-
                     foreach(var roomState in m.RoomState)
                     {
                         if (roomState.Scroll > 0x0001 && roomState.Scroll != 0x8000)
@@ -393,6 +514,42 @@ namespace Crocomire
                         catch
                         {
                             roomState.LevelData = new LevelData();
+                        }
+                    }
+
+                    /* read MDB DoorOut */
+                    _bReader.BaseStream.Seek(0x070000 + m.DoorOut, SeekOrigin.Begin);
+                    int doors = (m.RoomState[0].LevelData.Doors.Count > 0 ? m.RoomState[0].LevelData.Doors.Max(d => d.Block.BTS) + 1 : 0);
+                    for (int i = 0; i < doors; i++)
+                    {
+                        ushort pointer = _bReader.ReadUInt16();
+                        var ddb = new DDB();
+                        ddb.Pointer = pointer;
+                        m.DDB.Add(ddb);
+                    }
+
+                    /* read DDB Doorout */
+                    foreach (var ddb in m.DDB)
+                    {
+                        _bReader.BaseStream.Seek(Lunar.ToPC((uint)(0x830000 + ddb.Pointer)), SeekOrigin.Begin);
+                        ddb.RoomId = _bReader.ReadUInt16();
+                        ddb.Bitflags = _bReader.ReadByte();
+                        ddb.Index = _bReader.ReadByte();
+                        ddb.CloseX = _bReader.ReadByte();
+                        ddb.CloseY = _bReader.ReadByte();
+                        ddb.X = _bReader.ReadByte();
+                        ddb.Y = _bReader.ReadByte();
+                        ddb.Distance = _bReader.ReadUInt16();
+                        ddb.Code = _bReader.ReadUInt16();
+
+                        /* read door ASM */
+                        if (ddb.Code > 0x8000)
+                        {
+                            _bReader.BaseStream.Seek(Lunar.ToPC((uint)(0x8F0000 + ddb.Code)), SeekOrigin.Begin);
+                            byte[] tmp = new byte[0x1000];
+                            tmp = _bReader.ReadBytes(0x1000);
+                            var code = _disAsm.Disassemble(tmp);
+                            ddb.DoorASM = code;
                         }
                     }
 

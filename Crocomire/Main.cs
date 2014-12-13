@@ -103,81 +103,17 @@ namespace Crocomire
             listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
 
 
-            listBox1.Items.Add("Repointing/Relocating Room");
-            /* get memory for MDB header, state select and default state */
-            zfParlor.RoomAddress = sm.Mem.Allocate(0x8F, 11 + zfParlor.StateSelectSize + 26);
-            zfParlor.DoorOut = sm.Mem.Allocate(0x8F, (4 * zfParlor.DDB.Count) + 4);
+            listBox1.Items.Add("Removing rooms");
+            /* wipe out some vanilla rooms to make some space */
+            foreach (var deleteRoom in sm.MDBList.Where(r => r.RoomAddress > 0xB000 && r.RoomAddress < 0xD000).ToList())
+                sm.RemoveRoom(deleteRoom);
 
-            foreach (var door in zfParlor.DDB)
-            {
-                door.Pointer = sm.Mem.Allocate(0x83, 12);
-                door.RoomId = 0x92FD;
-                //door.Code = 0x0000;
-                if (door.DoorASM != null && door.DoorASM.Length > 0)
-                    door.Code = sm.Mem.Allocate(0x8F, door.DoorASM.Length);
-            }
+            listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
 
-            foreach (var roomState in zfParlor.RoomState)
-            {
-                if (roomState.Pointer != 0xE5E6)
-                    roomState.Pointer = sm.Mem.Allocate(0x8F, 26);
-
-                /* create new blank scrolling data for testing purposes */
-                //if (roomState.Scroll > 0x8000)
-                //{
-                //    for (int y = 0; y < zfParlor.Height; y++)
-                //    {
-                //        for (int x = 0; x < zfParlor.Width; x++)
-                //        {
-                //            roomState.ScrollData[x, y] = 2;
-                //        }
-                //    }
-                //}
-
-                roomState.EnemyPopList.Clear();
-                roomState.EnemySetList.Clear();
-                roomState.PLMList.Clear();
-
-                /* clear this out for now, we'll use it later to allocate correctly */
-                roomState.RoomData = 0;
-                roomState.EnemyPop = sm.Mem.Allocate(0xA1, (18 * roomState.EnemyPopList.Count) + 3);
-                roomState.EnemySet = sm.Mem.Allocate(0xB4, (6 * roomState.EnemySetList.Count) + 4);
-                roomState.FX1 = sm.Mem.Allocate(0x83, 16);
-                roomState.FX2 = 0x0000;
-                roomState.BGDataPtr = sm.Mem.Allocate(0x8F, roomState.BGData.Sum(bgd => bgd.Size) + 2);
-                //roomState.LayerHandling = 0;
-
-                
-                if(roomState.LayerHandlingCode != null && roomState.LayerHandlingCode.Length > 0)
-                    roomState.LayerHandling = sm.Mem.Allocate(0x8F, roomState.LayerHandlingCode.Length);
-                
-                
-                foreach(var bg in roomState.BGData)
-                {
-                    /* compress data to get compressed size + 0x20 (for variance) */
-                    var compressed = Lunar.Compress(bg.Data);
-                    bg.Pointer = sm.Mem.Allocate(compressed.Length + 0x20);
-                }
-
-                
-                if (roomState.Scroll > 0x0000)
-                {
-                    roomState.Scroll = sm.Mem.Allocate(0x8F, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length) + 4);
-                }
-
-                roomState.PLM = sm.Mem.Allocate(0x8F, (6 * roomState.PLMList.Count) + 4);
-            }
-
-            foreach (var roomState in zfParlor.RoomState)
-            {
-                if (roomState.RoomData == 0)
-                {
-                    var compressed = Lunar.Compress(roomState.LevelData.RawData);
-                    roomState.RoomData = sm.Mem.Allocate(compressed.Length + 0x20);
-                }
-            }
-
-            sm.MDBList.Add(zfParlor);
+            listBox1.Items.Add("Adding room");
+            sm.AddRoom(zfParlor);
+            
+            listBox1.Items.Add(String.Format("New room added and located at: 7{0:X}", zfParlor.RoomAddress));
 
             /* repoint doors to lead to new room */
             var parlor = sm.MDBList.Where(r => r.RoomId == "792FD").First();

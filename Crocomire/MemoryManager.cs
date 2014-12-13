@@ -44,7 +44,7 @@ namespace Crocomire
         public ushort Allocate(int bank, int size)
         {
             ushort pointer = 0;
-            foreach(var segment in FreeMemory[bank].ToList())
+            foreach(var segment in FreeMemory[bank].OrderBy(s => s.Start).ToList())
             {
                 if(segment.Size >= size)
                 {
@@ -67,34 +67,37 @@ namespace Crocomire
             ushort start = address;
             ushort end = (ushort)(address + (ushort)size);
 
-            /* check if this address falls within an existing bank first */
-            foreach(var segment in FreeMemory[bank].ToList())
-            {
-                if((start >= (segment.Start - 1) && start <= (segment.End + 1)) || (end >= (segment.Start -1) && end <= (segment.End -1)) || (start < segment.Start && end > segment.End))
-                {
-                    /* the freed segment falls over, within or next to an existing segment */
+            ///* check if this address falls within an existing bank first */
+            //if (FreeMemory.ContainsKey(bank))
+            //{
+            //    foreach (var segment in FreeMemory[bank].ToList())
+            //    {
+            //        if ((start >= (segment.Start - 1) && start <= (segment.End + 1)) || (end >= (segment.Start - 1) && end <= (segment.End - 1)) || (start < segment.Start && end > segment.End))
+            //        {
+            //            /* the freed segment falls over, within or next to an existing segment */
 
-                    /* make sure we don't extend this segment into other segments */
-                    foreach(var testSegment in FreeMemory[bank].Where(x => x != segment).ToList())
-                    {
-                        if(testSegment.Start <= end)
-                        {
-                            /* move endpoint to include this segment */
-                            end = testSegment.End;
-                            FreeMemory[bank].Remove(testSegment);
-                        }
-                    }
+            //            /* make sure we don't extend this segment into other segments */
+            //            foreach (var testSegment in FreeMemory[bank].Where(x => x != segment).ToList())
+            //            {
+            //                if (testSegment.Start > start && testSegment.Start <= end)
+            //                {
+            //                    /* move endpoint to include this segment */
+            //                    end = testSegment.End;
+            //                    FreeMemory[bank].Remove(testSegment);
+            //                }
+            //            }
 
-                    if (start < segment.Start)
-                        segment.Start = start;
+            //            if (start < segment.Start)
+            //                segment.Start = start;
 
-                    if (end > segment.End)
-                        segment.End = end;
+            //            if (end > segment.End)
+            //                segment.End = end;
 
-                    segment.Size = segment.End - segment.Start;
-                    return;
-                }
-            }
+            //            segment.Size = segment.End - segment.Start;
+            //            return;
+            //        }
+            //    }
+            //}
 
             /* if we're here no existing block could be extended */
             if(!FreeMemory.ContainsKey(bank))
@@ -104,6 +107,41 @@ namespace Crocomire
 
             var newSegment = new Segment(start, end);
             FreeMemory[bank].Add(newSegment);
+
+            mergeSegments(bank);
+        }
+
+        private void mergeSegments(int bank)
+        {
+            foreach(var segment in FreeMemory[bank].ToList())
+            {
+                if (!FreeMemory[bank].Contains(segment))
+                    continue;
+
+                var start = segment.Start;
+                var end = segment.End;
+                /* find any segment that overlaps with this segment */
+                foreach(var testSegment in FreeMemory[bank].Where(f => f != segment).ToList())
+                {
+                    if((start >= (testSegment.Start - 1) && start <= (testSegment.End + 1)) || (end >= (testSegment.Start - 1) && end <= (testSegment.End - 1)) || (start < testSegment.Start && end > testSegment.End))
+                    {
+                        /* extend the current segment and remove testsegment */
+                        if(testSegment.Start < start)
+                        {
+                            start = testSegment.Start;
+                        }
+                        
+                        if(testSegment.End > end)
+                        {
+                            end = testSegment.End;
+                        }
+                        FreeMemory[bank].Remove(testSegment);
+                    }
+                }
+                segment.Start = start;
+                segment.End = end;
+                segment.Size = end - start;
+            }
         }
     }
 
