@@ -23,6 +23,9 @@ namespace Crocomire
             FreeMemory.Add(0xCE, new List<Segment>() { new Segment(0xB32D, 0xFFFF) });
             FreeMemory.Add(0xDE, new List<Segment>() { new Segment(0xD1C0, 0xFFFF) });
             FreeMemory.Add(0xDF, new List<Segment>() { new Segment(0xD4DF, 0xFFFF) });
+
+            for(int b = 0xE0; b < 0xFF; b++)
+                FreeMemory.Add(b, new List<Segment>() { new Segment(0x0000, 0xFFFF) });
         }
 
         /* allocate anywhere */
@@ -32,7 +35,7 @@ namespace Crocomire
             foreach(var bank in FreeMemory.Where(f => f.Key > 0xC0).OrderBy(f => f.Key))
             {
                 pointer = Allocate(bank.Key, size);
-                if(pointer != 0)
+                if(pointer != 0xFFFF)
                 {
                     pointer = (uint)((bank.Key << 16) + pointer);
                     return pointer;
@@ -43,7 +46,7 @@ namespace Crocomire
 
         public ushort Allocate(int bank, int size)
         {
-            ushort pointer = 0;
+            ushort pointer = 0xFFFF;
             foreach(var segment in FreeMemory[bank].OrderBy(s => s.Start).ToList())
             {
                 if(segment.Size >= size)
@@ -58,6 +61,10 @@ namespace Crocomire
                     }
                     break;
                 }
+            }
+            if(pointer == 0xFFFF && bank < 0xC0)
+            {
+                throw new Exception(String.Format("Can't allocate more memory in bank: {0:X}", bank));
             }
             return pointer;
         }

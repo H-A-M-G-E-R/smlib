@@ -10,6 +10,9 @@ namespace Crocomire
     class Lunar
     {
         [DllImport("Lunar Compress.dll", CallingConvention = CallingConvention.StdCall)]
+        private static extern bool LunarOpenFile(string FileName, uint FileMode);
+
+        [DllImport("Lunar Compress.dll", CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern byte* LunarOpenRAMFile(void* data, uint FileMode, uint size);
 
         [DllImport("Lunar Compress.dll", CallingConvention = CallingConvention.StdCall)]
@@ -21,9 +24,18 @@ namespace Crocomire
         [DllImport("Lunar Compress.dll", CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern uint LunarRecompress(void* source, void* destination, uint DataSize, uint MaxDataSize, uint Format, uint Format2);
 
+        [DllImport("Lunar Compress.dll", CallingConvention = CallingConvention.StdCall)]
+        private static extern uint LunarExpandROM(uint Mbits);
 
         [DllImport("Lunar Compress.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern uint LunarSNEStoPC(uint Pointer, uint ROMType, uint Header);
+
+        public static void ExpandROM(string fileName, uint size)
+        {
+            LunarOpenFile(fileName, 1);
+            LunarExpandROM(size);
+            LunarCloseFile();
+        }
 
         public static uint ToPC(uint pointer)
         {

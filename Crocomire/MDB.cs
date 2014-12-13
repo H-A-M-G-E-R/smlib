@@ -45,7 +45,6 @@ namespace Crocomire
         {
             RoomState = new List<RoomState>();
             DDB = new List<DDB>();
-
         }
     }
 

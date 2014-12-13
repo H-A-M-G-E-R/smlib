@@ -103,16 +103,19 @@ namespace Crocomire
             listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
 
 
-            listBox1.Items.Add("Removing rooms");
-            /* wipe out some vanilla rooms to make some space */
+            listBox1.Items.Add("Removing some rooms");
+            /* wipe out some vanilla rooms to make some space */    
             foreach (var deleteRoom in sm.MDBList.Where(r => r.RoomAddress > 0xB000 && r.RoomAddress < 0xD000).ToList())
                 sm.RemoveRoom(deleteRoom);
 
             listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
 
-            listBox1.Items.Add("Adding room");
-            sm.AddRoom(zfParlor);
-            
+            listBox1.Items.Add("Adding rooms");
+            for (int i = 0; i < 80; i++)
+            {
+                sm.AddRoom(zfParlor);
+            }
+
             listBox1.Items.Add(String.Format("New room added and located at: 7{0:X}", zfParlor.RoomAddress));
 
             /* repoint doors to lead to new room */
@@ -127,6 +130,8 @@ namespace Crocomire
                     ddb.Code = 0x0000;
                 }
             }
+
+
             listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
             listBox1.Items.Add("Saving new ROM");
             sm.Write();

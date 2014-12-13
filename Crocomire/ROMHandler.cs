@@ -33,6 +33,7 @@ namespace Crocomire
         public void Write()
         {
             File.Copy(_fileName, _fileName + ".out.smc", true);
+            Lunar.ExpandROM(_fileName + ".out.smc", 32);
             _bWriter = new BinaryWriter(new FileStream(_fileName + ".out.smc", FileMode.Open));
             cleanRom();
             WriteMDB();
@@ -57,13 +58,13 @@ namespace Crocomire
         public void RemoveRoom(MDB room)
         {
             Mem.Free(0x8F, room.RoomAddress, 11 + room.StateSelectSize + 26);
-            Mem.Free(0x8F, room.DoorOut, (4 * room.DDB.Count) + 4);
+            Mem.Free(0x8F, room.DoorOut, (2 * room.DDB.Count));
 
             foreach (var door in room.DDB)
             {
-                Mem.Free(0x83, door.Pointer, 12);
-                if (door.DoorASM != null && door.DoorASM.Length > 0)
-                    Mem.Free(0x8F, door.Code, door.DoorASM.Length);
+                //Mem.Free(0x83, door.Pointer, 12);
+                //if (door.DoorASM != null && door.DoorASM.Length > 0)
+                //    Mem.Free(0x8F, door.Code, door.DoorASM.Length);
             }
 
             foreach (var roomState in room.RoomState)
@@ -96,13 +97,13 @@ namespace Crocomire
                 }
                 */
 
-                if (roomState.Scroll > 0x0000)
+                if (roomState.Scroll > 0x8000)
                 {
-                    Mem.Free(0x8F, roomState.Scroll, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length) + 4);
+                    Mem.Free(0x8F, roomState.Scroll, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length));
                 }
 
                 if (roomState.PLM > 0x8000)
-                    Mem.Free(0x8F, roomState.PLM, (6 * roomState.PLMList.Count) + 4);
+                    Mem.Free(0x8F, roomState.PLM, (6 * roomState.PLMList.Count));
             }
 
             foreach (var roomState in room.RoomState)
@@ -119,7 +120,7 @@ namespace Crocomire
         {
             /* get memory for MDB header, state select and default state */
             room.RoomAddress = Mem.Allocate(0x8F, 11 + room.StateSelectSize + 26);
-            room.DoorOut = Mem.Allocate(0x8F, (4 * room.DDB.Count) + 4);
+            room.DoorOut = Mem.Allocate(0x8F, (2 * room.DDB.Count));
 
             foreach (var door in room.DDB)
             {
