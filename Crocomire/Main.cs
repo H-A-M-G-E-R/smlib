@@ -13,61 +13,207 @@ namespace Crocomire
     public partial class Main : Form
     {
         ROMHandler handler = new ROMHandler("D:\\sm.smc");
+        private MDB currentRoom;
         public Main()
         {
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+
+        //private void listBox1_Click(object sender, EventArgs e)
+        //{
+        //   string roomStr = (string)listBox1.SelectedItem;
+        //    string roomId = roomStr.Substring(0, 5);
+
+        //    var room = handler.MDBList.Where(r => r.RoomId == roomId).First();
+
+        //    Graphics g = pictureBox1.CreateGraphics();
+        //    g.Clear(Color.White);
+        //    for(int y = 0; y < room.RoomState[0].LevelData.Height; y++)
+        //        for(int x = 0; x < room.RoomState[0].LevelData.Width; x++)
+        //        {
+        //            var clip = room.RoomState[0].LevelData.Layer1[x, y].Clip;
+        //            var bts = room.RoomState[0].LevelData.Layer1[x, y].BTS;
+        //            switch(clip)
+        //            {
+        //                case 0x08:
+        //                    g.FillRectangle(Brushes.Black, x*3, y*3, 3, 3);
+        //                    break;
+        //                case 0x01:
+        //                    g.DrawRectangle(Pens.Green, x * 3, y * 3, 3, 3);
+        //                    break;
+        //                case 0x09:
+        //                    g.DrawRectangle(Pens.Blue, x * 3, y * 3, 3, 3);
+        //                    break;
+        //                case 0x00:
+        //                    break;
+        //                default:
+        //                    g.DrawRectangle(Pens.Red, x*3, y*3, 3, 3);
+        //                    break;                        
+        //            }
+        //        }
+        //}
+
+        //private void button6_Click(object sender, EventArgs e)
+        //{
+        //    string roomStr = (string)listBox1.SelectedItem;
+        //    string roomId = roomStr.Substring(0, 5);
+        //    listBox1.Items.Clear();
+        //    listBox1.Items.Add("Opening Z-Factor");
+        //    var zFactor = new ROMHandler("D:\\zf.smc");
+        //    zFactor.Read();
+
+
+        //    var zfParlor = zFactor.MDBList.Where(r => r.RoomId == roomId).First();
+
+        //    listBox1.Items.Add("Opening SM");
+        //    var sm = new ROMHandler("D:\\sm.smc");
+        //    sm.Read();
+
+        //    listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
+
+
+        //    listBox1.Items.Add("Removing some rooms");
+        //    /* wipe out some vanilla rooms to make some space */    
+        //    foreach (var deleteRoom in sm.MDBList.Where(r => r.RoomAddress > 0xB000 && r.RoomAddress < 0xD000).ToList())
+        //        sm.RemoveRoom(deleteRoom);
+
+        //    listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
+
+        //    listBox1.Items.Add("Adding room");
+
+        //    sm.AddRoom(zfParlor);
+
+        //    listBox1.Items.Add(String.Format("New room added and located at: 7{0:X}", zfParlor.RoomAddress));
+
+        //    /* repoint doors to lead to new room */
+        //    var parlor = sm.MDBList.Where(r => r.RoomId == "792FD").First();
+        //    foreach (var ddb in parlor.DDB)
+        //    {
+        //        if (ddb.RoomId == 0x990D)
+        //        {
+        //            ddb.RoomId = zfParlor.RoomAddress;
+        //            ddb.X = Convert.ToByte(txtDoorX.Text);
+        //            ddb.Y = Convert.ToByte(txtDoorY.Text);
+        //            ddb.Code = 0x0000;
+        //        }
+        //    }
+
+
+        //    listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
+        //    listBox1.Items.Add("Saving new ROM");
+        //    sm.Write();
+        //}
+
+        //private void button4_Click(object sender, EventArgs e)
+        //{
+        //    handler = new ROMHandler("D:\\zf.smc");
+        //    handler.Read();
+        //    listBox1.Items.Clear();
+        //    listBox1.Items.AddRange(handler.MDBList.Select(x => String.Format("{0} -> w: {1}, h: {2}, doorout: {3:X}, roomstates: {4}, doors: {5}, plms: {6}, s: {7}", new object[] { x.RoomId, x.Width, x.Height, x.DoorOut, x.RoomState.Count, x.DDB.Count, x.RoomState[0].PLMList.Count, x.RoomState[0].LevelData.Size })).ToArray());
+
+        //}
+
+        private void label1_Click(object sender, EventArgs e)
         {
-            handler = new ROMHandler("D:\\sm.smc");
-            handler.Read();            
-            listBox1.Items.Clear();
-            listBox1.Items.AddRange(handler.MDBList.Select(x => String.Format("{0} -> w: {1}, h: {2}, doorout: {3:X}, roomstates: {4}, doors: {5}, plms: {6}, s: {7}", new object[] { x.RoomId, x.Width, x.Height, x.DoorOut, x.RoomState.Count, x.DDB.Count, x.RoomState[0].PLMList.Count, x.RoomState[0].LevelData.Size })).ToArray());
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void btnOpen_Click(object sender, EventArgs e)
         {
-            handler.Write();
+            var fileDialog = new OpenFileDialog();
+            if(fileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string fileName = fileDialog.FileName;
+                handler = new ROMHandler(fileName);
+                handler.Read();
+                refreshRoomList();
+            }
         }
 
-        private void button3_Click(object sender, EventArgs e)
+
+
+        private void refreshRoomList()
         {
-            listBox1.Items.Clear();
-            listBox1.Items.Add("Opening ROM");
-            handler.Read();
-            int i = 0;
+            lvRooms.Items.Clear();
             foreach(var room in handler.MDBList)
             {
-                foreach(var state in room.RoomState)
-                {
-                    i += state.PLMList.Count;
-                    state.PLMList.Clear();
-                }
+                lvRooms.Items.Add(new ListViewItem(new string[] { room.RoomId, room.Width.ToString(), room.Height.ToString() }));
             }
-            listBox1.Items.Add(i.ToString() + " PLMs removed");
-            handler.Write();
-            listBox1.Items.Add("Closed ROM");
         }
 
-        private void listBox1_Click(object sender, EventArgs e)
+        private void refreshRoom(MDB room)
         {
-            string roomStr = (string)listBox1.SelectedItem;
-            string roomId = roomStr.Substring(0, 5);
+            /* update room graphics */
+            redrawRoom(room);
 
-            var room = handler.MDBList.Where(r => r.RoomId == roomId).First();
+            /* update textboxes */
+            txtAddress.Text = String.Format("{0:X}", room.RoomAddress);
+            txtDoorOut.Text = String.Format("{0:X}", room.DoorOut);
+            txtX.Text = room.XPos.ToString();
+            txtY.Text = room.YPos.ToString();
+            txtWidth.Text = room.Width.ToString();
+            txtHeight.Text = room.Height.ToString();
+            txtRegion.Text = room.Region.ToString();
 
-            Graphics g = pictureBox1.CreateGraphics();
+            var dsBindingList = new BindingList<DDB>(room.DDB);
+            var dsBindingSource = new BindingSource(dsBindingList, null);
+            dgvDDB.DataSource = dsBindingSource;
+            dgvDDB.Columns.Remove("DoorASM");
+
+            dgvDDB.Columns[0].DefaultCellStyle.Format = "X04";
+            dgvDDB.Columns[1].DefaultCellStyle.Format = "X04";
+            dgvDDB.Columns[2].DefaultCellStyle.Format = "X04";
+            dgvDDB.Columns[3].DefaultCellStyle.Format = "X04";
+            dgvDDB.Columns[8].DefaultCellStyle.Format = "X04";
+            dgvDDB.Columns[9].DefaultCellStyle.Format = "X04";
+
+
+            var rsBindingList = new BindingList<RoomState>(room.RoomState);
+            var rsBindingSource = new BindingSource(rsBindingList, null);
+            dgvRoomStates.DataSource = rsBindingSource;
+            dgvRoomStates.Columns.Remove("LevelData");
+            dgvRoomStates.Columns.Remove("LayerHandlingCode");
+            dgvRoomStates.Columns.Remove("FX1Data");
+            dgvRoomStates.Columns.Remove("Unused");
+            dgvRoomStates.Columns.Remove("TestValueDoor");
+
+            dgvRoomStates.Columns[0].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[1].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[2].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[3].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[4].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[5].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[6].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[7].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[8].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[9].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[10].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[11].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[12].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[13].DefaultCellStyle.Format = "X04";
+            dgvRoomStates.Columns[14].DefaultCellStyle.Format = "X04";
+
+            currentRoom = room;
+        }
+
+        private void redrawRoom(MDB room)
+        {
+            /* update level view */
+            pictureBox1.Width = room.Width * 16 * 3;
+            pictureBox1.Height = room.Height * 16 * 3;
+            Bitmap bmp = new Bitmap(pictureBox1.Width, pictureBox1.Height);
+            Graphics g = Graphics.FromImage(bmp);
             g.Clear(Color.White);
-            for(int y = 0; y < room.RoomState[0].LevelData.Height; y++)
-                for(int x = 0; x < room.RoomState[0].LevelData.Width; x++)
+            for (int y = 0; y < room.RoomState[0].LevelData.Height; y++)
+            {
+                for (int x = 0; x < room.RoomState[0].LevelData.Width; x++)
                 {
                     var clip = room.RoomState[0].LevelData.Layer1[x, y].Clip;
                     var bts = room.RoomState[0].LevelData.Layer1[x, y].BTS;
-                    switch(clip)
+                    switch (clip)
                     {
                         case 0x08:
-                            g.FillRectangle(Brushes.Black, x*3, y*3, 3, 3);
+                            g.FillRectangle(Brushes.Black, x * 3, y * 3, 3, 3);
                             break;
                         case 0x01:
                             g.DrawRectangle(Pens.Green, x * 3, y * 3, 3, 3);
@@ -78,77 +224,212 @@ namespace Crocomire
                         case 0x00:
                             break;
                         default:
-                            g.DrawRectangle(Pens.Red, x*3, y*3, 3, 3);
-                            break;                        
+                            g.DrawRectangle(Pens.Red, x * 3, y * 3, 3, 3);
+                            break;
                     }
                 }
-        }
-
-        private void button6_Click(object sender, EventArgs e)
-        {
-            string roomStr = (string)listBox1.SelectedItem;
-            string roomId = roomStr.Substring(0, 5);
-            listBox1.Items.Clear();
-            listBox1.Items.Add("Opening Z-Factor");
-            var zFactor = new ROMHandler("D:\\zf.smc");
-            zFactor.Read();
-
-
-            var zfParlor = zFactor.MDBList.Where(r => r.RoomId == roomId).First();
-
-            listBox1.Items.Add("Opening SM");
-            var sm = new ROMHandler("D:\\sm.smc");
-            sm.Read();
-
-            listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
-
-
-            listBox1.Items.Add("Removing some rooms");
-            /* wipe out some vanilla rooms to make some space */    
-            foreach (var deleteRoom in sm.MDBList.Where(r => r.RoomAddress > 0xB000 && r.RoomAddress < 0xD000).ToList())
-                sm.RemoveRoom(deleteRoom);
-
-            listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
-
-            listBox1.Items.Add("Adding rooms");
-            for (int i = 0; i < 80; i++)
-            {
-                sm.AddRoom(zfParlor);
             }
 
-            listBox1.Items.Add(String.Format("New room added and located at: 7{0:X}", zfParlor.RoomAddress));
+            pictureBox1.Image = bmp;
+            pictureBox1.Invalidate();
+        }
 
-            /* repoint doors to lead to new room */
-            var parlor = sm.MDBList.Where(r => r.RoomId == "792FD").First();
-            foreach (var ddb in parlor.DDB)
+        private void lvRooms_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
+        {
+            if (lvRooms.SelectedItems.Count > 0)
             {
-                if (ddb.RoomId == 0x990D)
+                var roomId = lvRooms.SelectedItems[0].Text;
+                var room = handler.MDBList.Where(r => r.RoomId == roomId).FirstOrDefault();
+                if (room == null)
+                    return;
+                btnAddRoom.Visible = false;
+                refreshRoom(room);
+            }
+        }
+
+        private void Main_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void dgvRoomStates_SelectionChanged(object sender, EventArgs e)
+        {
+            var roomState = (RoomState)dgvRoomStates.CurrentRow.DataBoundItem;
+            var dsBindingList = new BindingList<PLM>(roomState.PLMList);
+            var dsBindingSource = new BindingSource(dsBindingList, null);
+            dgvPLM.DataSource = dsBindingSource;
+
+            dgvPLM.Columns[0].DefaultCellStyle.Format = "X04";
+            dgvPLM.Columns[1].DefaultCellStyle.Format = "X04";
+            dgvPLM.Columns[2].DefaultCellStyle.Format = "X04";
+            dgvPLM.Columns[3].DefaultCellStyle.Format = "X04";
+
+
+            var rsBindingList = new BindingList<EnemyPop>(roomState.EnemyPopList);
+            var rsBindingSource = new BindingSource(rsBindingList, null);
+            dgvEnemyPop.DataSource = rsBindingSource;
+
+            dgvEnemyPop.Columns[0].DefaultCellStyle.Format = "X04";
+            dgvEnemyPop.Columns[3].DefaultCellStyle.Format = "X04";
+            dgvEnemyPop.Columns[4].DefaultCellStyle.Format = "X04";
+            dgvEnemyPop.Columns[5].DefaultCellStyle.Format = "X04";
+            dgvEnemyPop.Columns[6].DefaultCellStyle.Format = "X04";
+            dgvEnemyPop.Columns[7].DefaultCellStyle.Format = "X04";
+
+            var raBindingList = new BindingList<EnemySet>(roomState.EnemySetList);
+            var raBindingSource = new BindingSource(raBindingList, null);
+            dgvEnemySet.DataSource = raBindingSource;
+            dgvEnemySet.Columns[0].DefaultCellStyle.Format = "X04";
+        }
+
+        private void txtDoorOut_Leave(object sender, EventArgs e)
+        {
+            currentRoom.DoorOut = Convert.ToUInt16(txtDoorOut.Text, 16);
+        }
+
+        private void txtX_Leave(object sender, EventArgs e)
+        {
+            currentRoom.XPos = Byte.Parse(txtX.Text);
+        }
+
+        private void txtY_Leave(object sender, EventArgs e)
+        {
+            currentRoom.YPos = Byte.Parse(txtY.Text);
+        }
+
+        private void txtRegion_Leave(object sender, EventArgs e)
+        {
+            currentRoom.Region = Byte.Parse(txtRegion.Text);
+        }
+
+        private void txtName_Leave(object sender, EventArgs e)
+        {
+            currentRoom.Name = txtName.Text;
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            handler.Write();
+        }
+
+        private void btnExport_Click(object sender, EventArgs e)
+        {
+            if (lvRooms.CheckedItems.Count == 0)
+            {
+                MessageBox.Show("No room selected for export");
+                return;
+            }
+            var fileSaveDialog = new FolderBrowserDialog();
+            if(fileSaveDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                foreach(ListViewItem listViewItem in lvRooms.CheckedItems)
                 {
-                    ddb.RoomId = zfParlor.RoomAddress;
-                    ddb.X = Convert.ToByte(txtDoorX.Text);
-                    ddb.Y = Convert.ToByte(txtDoorY.Text);
-                    ddb.Code = 0x0000;
+                    var roomId = listViewItem.Text;
+                    var room = handler.MDBList.Where(r => r.RoomId == roomId).FirstOrDefault();
+                    if(room != null)
+                    {
+                        room.Save(fileSaveDialog.SelectedPath);
+                    }
                 }
             }
-
-
-            listBox1.Items.Add("Free memory: " + sm.Mem.FreeMemory.Sum(x => x.Value.Sum(y => y.Size)).ToString());
-            listBox1.Items.Add("Saving new ROM");
-            sm.Write();
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private void btnImport_Click(object sender, EventArgs e)
         {
-            handler = new ROMHandler("D:\\zf.smc");
-            handler.Read();
-            listBox1.Items.Clear();
-            listBox1.Items.AddRange(handler.MDBList.Select(x => String.Format("{0} -> w: {1}, h: {2}, doorout: {3:X}, roomstates: {4}, doors: {5}, plms: {6}, s: {7}", new object[] { x.RoomId, x.Width, x.Height, x.DoorOut, x.RoomState.Count, x.DDB.Count, x.RoomState[0].PLMList.Count, x.RoomState[0].LevelData.Size })).ToArray());
+            var fileDialog = new OpenFileDialog();
+            if (fileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string fileName = fileDialog.FileName;
+                var room = MDB.Load(fileName);
+
+                /* wipe out all the pointers for this room */
+                room.RoomAddress = 0xFFFF;
+                room.DoorOut = 0xFFFF;
+                foreach(var roomState in room.RoomState)
+                {
+                    roomState.BGDataPtr = 0xFFFF;
+                    roomState.EnemyPop = 0xFFFF;
+                    roomState.EnemySet = 0xFFFF;
+                    roomState.FX1 = 0xFFFF;
+                    roomState.LayerHandling = 0xFFFF;
+                    roomState.RoomData = 0xFFFFFF;
+                    roomState.PLM = 0xFFFF;
+                    roomState.Scroll = 0xFFFF;
+                    if(roomState.Pointer != 0xE5E6)
+                        roomState.Pointer = 0xFFFF;
+                }
+                
+                foreach(var ddb in room.DDB)
+                {
+                    ddb.Pointer = 0xFFFF;
+                }
+
+                refreshRoom(room);
+                btnAddRoom.Visible = true;
+            }
+        }
+
+        private void btnAddRoom_Click(object sender, EventArgs e)
+        {
+            handler.AddRoom(currentRoom);
+            btnAddRoom.Visible = false;
+            refreshRoomList();
+            refreshRoom(currentRoom);
+
+            for (int i = 0; i < lvRooms.Items.Count; i++)
+                if(lvRooms.Items[i].Text == currentRoom.RoomId)
+                {
+                    lvRooms.Items[i].Selected = true;
+                    lvRooms.Select();
+                    lvRooms.EnsureVisible(i);
+                    break;
+                }
 
         }
 
-        private void label1_Click(object sender, EventArgs e)
+        private void dgvDDB_CellParsing(object sender, DataGridViewCellParsingEventArgs e)
         {
+            if(dgvDDB.Columns[e.ColumnIndex].DefaultCellStyle.Format == "X04")
+            {
+                e.Value = Convert.ToUInt16(e.Value.ToString(), 16);
+                e.ParsingApplied = true;
+            }
+        }
 
+        private void dgvRoomStates_CellParsing(object sender, DataGridViewCellParsingEventArgs e)
+        {
+            if (dgvRoomStates.Columns[e.ColumnIndex].DefaultCellStyle.Format == "X04")
+            {
+                e.Value = Convert.ToUInt16(e.Value.ToString(), 16);
+                e.ParsingApplied = true;
+            }
+        }
+
+        private void dgvPLM_CellParsing(object sender, DataGridViewCellParsingEventArgs e)
+        {
+            if (dgvPLM.Columns[e.ColumnIndex].DefaultCellStyle.Format == "X04")
+            {
+                e.Value = Convert.ToUInt16(e.Value.ToString(), 16);
+                e.ParsingApplied = true;
+            }
+        }
+
+        private void dgvEnemySet_CellParsing(object sender, DataGridViewCellParsingEventArgs e)
+        {
+            if (dgvEnemySet.Columns[e.ColumnIndex].DefaultCellStyle.Format == "X04")
+            {
+                e.Value = Convert.ToUInt16(e.Value.ToString(), 16);
+                e.ParsingApplied = true;
+            }
+        }
+
+        private void dgvEnemyPop_CellParsing(object sender, DataGridViewCellParsingEventArgs e)
+        {
+            if (dgvEnemyPop.Columns[e.ColumnIndex].DefaultCellStyle.Format == "X04")
+            {
+                e.Value = Convert.ToUInt16(e.Value.ToString(), 16);
+                e.ParsingApplied = true;
+            }
         }
     }
 }

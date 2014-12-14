@@ -10,6 +10,7 @@ namespace Crocomire
     class ROMHandler
     {
         private string _fileName;
+        private int _plmBank = 0x8F;
         private Disassembler _disAsm;
         private BinaryReader _bReader;
         private BinaryWriter _bWriter;
@@ -32,9 +33,9 @@ namespace Crocomire
 
         public void Write()
         {
-            File.Copy(_fileName, _fileName + ".out.smc", true);
-            Lunar.ExpandROM(_fileName + ".out.smc", 32);
-            _bWriter = new BinaryWriter(new FileStream(_fileName + ".out.smc", FileMode.Open));
+            File.Copy(_fileName, _fileName, true);
+            Lunar.ExpandROM(_fileName, 32);
+            _bWriter = new BinaryWriter(new FileStream(_fileName, FileMode.Open));
             cleanRom();
             WriteMDB();
             _bWriter.Close();
@@ -120,12 +121,12 @@ namespace Crocomire
         {
             /* get memory for MDB header, state select and default state */
             room.RoomAddress = Mem.Allocate(0x8F, 11 + room.StateSelectSize + 26);
+            room.RoomId = String.Format("7{0:X}", room.RoomAddress);
             room.DoorOut = Mem.Allocate(0x8F, (2 * room.DDB.Count));
 
             foreach (var door in room.DDB)
             {
                 door.Pointer = Mem.Allocate(0x83, 12);
-                door.RoomId = 0x92FD;
                 //door.Code = 0x0000;
                 if (door.DoorASM != null && door.DoorASM.Length > 0)
                     door.Code = Mem.Allocate(0x8F, door.DoorASM.Length);
@@ -211,6 +212,10 @@ namespace Crocomire
         {
             MDBList = new List<MDB>();
             byte[] data = new byte[0xFFFF];
+
+            /* check where the PLM bank is */
+            _bReader.BaseStream.Seek(0x204AC, SeekOrigin.Begin);
+            _plmBank = (int)_bReader.ReadByte();                
 
             /* scan until we find a MDB header entry */
             for(int x = 0x8000; x < 0xFFFF; x++)
@@ -360,7 +365,7 @@ namespace Crocomire
                         /* read room PLMs */
                         if (roomState.PLM != 0x0000)
                         {
-                            _bReader.BaseStream.Seek(0x070000 + roomState.PLM, SeekOrigin.Begin);
+                            _bReader.BaseStream.Seek(Lunar.ToPC((uint)(_plmBank<<16) + roomState.PLM), SeekOrigin.Begin);
                             while (true)
                             {
                                 ushort command = _bReader.ReadUInt16();
@@ -576,7 +581,7 @@ namespace Crocomire
                 _bWriter.Write(room.Unknown4);
                 _bWriter.Write(room.DoorOut);
 
-                foreach(var roomState in room.RoomState.Where(r => r.Pointer != 0xE5E6))
+                foreach (var roomState in room.RoomState.Where(r => r.TestCode != 0xE5E6))
                 {
                     _bWriter.Write(roomState.TestCode);
                     if (roomState.TestCode == 0xE612 || roomState.TestCode == 0xE629)
@@ -593,7 +598,7 @@ namespace Crocomire
                 _bWriter.Write((ushort)0xE5E6);
                 
                 /* write default state */
-                var ds = room.RoomState.Where(r => r.Pointer == 0xE5E6).First();
+                var ds = room.RoomState.Where(r => r.TestCode == 0xE5E6).First();
                 _bWriter.Write((byte)(ds.RoomData & 0xFF));
                 _bWriter.Write((byte)((ds.RoomData >> 8) & 0xFF));
                 _bWriter.Write((byte)((ds.RoomData >> 16) & 0xFF));
@@ -613,7 +618,7 @@ namespace Crocomire
 
 
                 /* write roomstates */
-                foreach (var roomState in room.RoomState.Where(r => r.Pointer != 0xE5E6))
+                foreach (var roomState in room.RoomState.Where(r => r.TestCode != 0xE5E6))
                 {
                     _bWriter.BaseStream.Seek(0x070000 + roomState.Pointer, SeekOrigin.Begin);
                     _bWriter.Write((byte)(roomState.RoomData & 0xFF));
@@ -657,7 +662,7 @@ namespace Crocomire
                     if (roomState.PLM != 0x0000)
                     {
                         /* write PLMs */
-                        _bWriter.Seek(0x070000 + roomState.PLM, SeekOrigin.Begin);
+                        _bWriter.Seek((int)Lunar.ToPC((uint)(_plmBank << 16) + roomState.PLM), SeekOrigin.Begin);
                         foreach (var plm in roomState.PLMList)
                         {
                             _bWriter.Write(plm.Command);

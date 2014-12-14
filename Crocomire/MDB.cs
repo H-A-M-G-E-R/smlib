@@ -4,9 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Crocomire
 {
+    [Serializable()]
     class MDB
     {
         public ushort RoomAddress { get; set; }
@@ -23,6 +25,7 @@ namespace Crocomire
         public byte Unknown4 { get; set; }
         public List<RoomState> RoomState { get; set; }
         public List<DDB> DDB { get; set; }
+        public string Name { get; set; }
 
         public int StateSelectSize
         {
@@ -36,6 +39,10 @@ namespace Crocomire
                     {
                         size++;
                     }
+                    else if (roomState.TestCode == 0xE5EB)
+                    {
+                        size += 2;
+                    }
                 }
                 return size + 4;
             }
@@ -46,14 +53,37 @@ namespace Crocomire
             RoomState = new List<RoomState>();
             DDB = new List<DDB>();
         }
+
+        public void Save(string path)
+        {
+            if (Name == null || Name == "")
+                Name = Guid.NewGuid().ToString();
+
+            var stream = File.Open(path + "\\" + Name + ".room", FileMode.Create);
+            BinaryFormatter bin = new BinaryFormatter();
+            bin.Serialize(stream, this);
+            stream.Close();
+        }
+
+        public static MDB Load(string fileName)
+        {
+            var stream = File.Open(fileName, FileMode.Open);
+            BinaryFormatter bin = new BinaryFormatter();
+            var mdb = (MDB)bin.Deserialize(stream);
+            stream.Close();
+            return mdb;            
+        }
+
     }
 
+    [Serializable()]
     class StateSelect
     {
         public ushort RoomState { get; set; }
 
     }
 
+    [Serializable()]
     class RoomState
     {
         public ushort TestCode { get; set; }
@@ -98,7 +128,8 @@ namespace Crocomire
             ScrollData = null;
         }
     }
-
+    
+    [Serializable()]
     class BG
     {
         public ushort Header {get; set; }
@@ -108,6 +139,7 @@ namespace Crocomire
         public int Size { get { return 5 + Unknown.Length; } }
     }
 
+    [Serializable()]
     class PLM
     {
         public ushort Command { get; set; }
@@ -116,6 +148,7 @@ namespace Crocomire
         public ushort Args { get; set; }
     }
 
+    [Serializable()]
     class DDB
     {
         public ushort Pointer { get; set; }
@@ -131,6 +164,7 @@ namespace Crocomire
         public byte[] DoorASM { get; set; }
     }
 
+    [Serializable()]
     class EnemyPop
     {
         public ushort EnemyData { get; set; }
@@ -143,12 +177,14 @@ namespace Crocomire
         public ushort RoomArg2 { get; set; }
     }
 
+    [Serializable()]
     class EnemySet
     {
         public ushort EnemyUsed { get; set; }
         public ushort Palette { get; set; }
     }
 
+    [Serializable()]
     class FX1
     {
         public ushort Select { get; set; }
@@ -165,6 +201,7 @@ namespace Crocomire
         public byte Blend { get; set; }
     }
 
+    [Serializable()]
     class LevelData
     {
         public int Width { get; set; }
@@ -210,7 +247,8 @@ namespace Crocomire
             }
         }
         public List<Door> Doors { get; set; }
-        
+
+        [Serializable()]
         public struct Block
         {
             public ushort Tile;
@@ -218,6 +256,7 @@ namespace Crocomire
             public byte Clip;
         }
 
+        [Serializable()]
         public struct Door
         {
             public Block Block;
