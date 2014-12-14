@@ -66,6 +66,7 @@
             this.label10 = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.btnAddRoom = new System.Windows.Forms.Button();
+            this.btnDelete = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -149,7 +150,7 @@
             // 
             // btnExport
             // 
-            this.btnExport.Location = new System.Drawing.Point(311, 15);
+            this.btnExport.Location = new System.Drawing.Point(309, 12);
             this.btnExport.Name = "btnExport";
             this.btnExport.Size = new System.Drawing.Size(87, 33);
             this.btnExport.TabIndex = 19;
@@ -159,7 +160,7 @@
             // 
             // btnImport
             // 
-            this.btnImport.Location = new System.Drawing.Point(404, 15);
+            this.btnImport.Location = new System.Drawing.Point(402, 12);
             this.btnImport.Name = "btnImport";
             this.btnImport.Size = new System.Drawing.Size(87, 33);
             this.btnImport.TabIndex = 20;
@@ -455,12 +456,23 @@
             this.btnAddRoom.Visible = false;
             this.btnAddRoom.Click += new System.EventHandler(this.btnAddRoom_Click);
             // 
+            // btnDelete
+            // 
+            this.btnDelete.Location = new System.Drawing.Point(215, 12);
+            this.btnDelete.Name = "btnDelete";
+            this.btnDelete.Size = new System.Drawing.Size(90, 33);
+            this.btnDelete.TabIndex = 22;
+            this.btnDelete.Text = "Delete Room(s)";
+            this.btnDelete.UseVisualStyleBackColor = true;
+            this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlDarkDark;
             this.ClientSize = new System.Drawing.Size(861, 746);
+            this.Controls.Add(this.btnDelete);
             this.Controls.Add(this.btnAddRoom);
             this.Controls.Add(this.btnImport);
             this.Controls.Add(this.btnExport);
@@ -528,6 +540,7 @@
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.Button btnAddRoom;
+        private System.Windows.Forms.Button btnDelete;
     }
 }
 

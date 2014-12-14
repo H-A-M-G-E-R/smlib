@@ -254,14 +254,22 @@ namespace Crocomire
                 room.DoorOut = 0xFFFF;
                 foreach(var roomState in room.RoomState)
                 {
-                    roomState.BGDataPtr = 0xFFFF;
-                    roomState.EnemyPop = 0xFFFF;
-                    roomState.EnemySet = 0xFFFF;
-                    roomState.FX1 = 0xFFFF;
-                    roomState.LayerHandling = 0xFFFF;
-                    roomState.RoomData = 0xFFFFFF;
-                    roomState.PLM = 0xFFFF;
-                    roomState.Scroll = 0xFFFF;
+                    if (roomState.BGDataPtr > 0)
+                        roomState.BGDataPtr = 0xFFFF;
+                    if (roomState.EnemyPop > 0)
+                        roomState.EnemyPop = 0xFFFF;
+                    if (roomState.EnemySet > 0)
+                        roomState.EnemySet = 0xFFFF;
+                    if (roomState.FX1 > 0)
+                        roomState.FX1 = 0xFFFF;
+                    if (roomState.LayerHandling > 0)
+                        roomState.LayerHandling = 0xFFFF;
+                    if (roomState.RoomData > 0)
+                        roomState.RoomData = 0xFFFFFF;
+                    if (roomState.PLM > 0)
+                        roomState.PLM = 0xFFFF;
+                    if(roomState.Scroll > 0)
+                        roomState.Scroll = 0xFFFF;
                     if(roomState.Pointer != 0xE5E6)
                         roomState.Pointer = 0xFFFF;
                 }
@@ -337,6 +345,20 @@ namespace Crocomire
                 e.Value = Convert.ToUInt16(e.Value.ToString(), 16);
                 e.ParsingApplied = true;
             }
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem listViewItem in lvRooms.CheckedItems)
+            {
+                var roomId = listViewItem.Text;
+                var room = handler.MDBList.Where(r => r.RoomId == roomId).FirstOrDefault();
+                if (room != null)
+                {
+                    handler.RemoveRoom(room);
+                }
+            }
+            refreshRoomList();
         }
     }
 }

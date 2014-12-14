@@ -33,7 +33,6 @@ namespace Crocomire
 
         public void Write()
         {
-            File.Copy(_fileName, _fileName, true);
             Lunar.ExpandROM(_fileName, 32);
             _bWriter = new BinaryWriter(new FileStream(_fileName, FileMode.Open));
             cleanRom();
@@ -725,7 +724,7 @@ namespace Crocomire
                     }
 
                     /* write bg data */
-                    if(roomState.BGDataPtr > 0x8000)
+                    if(roomState.BGDataPtr > 0x8000 && roomState.BGData.Count > 0)
                     {
                         _bWriter.Seek((int)Lunar.ToPC((uint)0x8F0000 + roomState.BGDataPtr), SeekOrigin.Begin);
                         foreach (var bg in roomState.BGData)
