@@ -304,13 +304,20 @@ namespace Crocomire
                     Layer1[x, y].Tile = (ushort)((data[t + 1] << 8) + data[t]);
                     Layer1[x, y].BTS = data[b];
                     Layer1[x, y].Clip = (byte)((Layer1[x, y].Tile >> 12));
-                    if(data.Count() > (Size + 2 + (Size/2)))
+                    if (data.Length > (Size + 2 + (Size / 2)))
                     {
                         if(Layer2 == null)
                             Layer2 = new Block[w, h];
 
                         int l2 = (Size + 2 + (Size/2) + (o*2));
-                        Layer2[x, y].Tile = (ushort)((data[l2 + 1] << 8) + data[l2]);
+                        if (l2 + 1 > (data.Length - 1))
+                        {
+                            Layer2[x, y].Tile = (ushort)(data[l2]);
+                        }
+                        else
+                        {
+                            Layer2[x, y].Tile = (ushort)((data[l2 + 1] << 8) + data[l2]);
+                        }
                     }
 
                     if(Layer1[x, y].Clip == 0x09)
