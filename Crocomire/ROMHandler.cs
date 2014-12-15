@@ -11,6 +11,7 @@ namespace Crocomire
     {
         private string _fileName;
         private int _plmBank = 0x8F;
+        private int _scrollBank = 0x8F;
         private Disassembler _disAsm;
         private BinaryReader _bReader;
         private BinaryWriter _bWriter;
@@ -99,7 +100,7 @@ namespace Crocomire
 
                 if (roomState.Scroll > 0x8000)
                 {
-                    Mem.Free(0x8F, roomState.Scroll, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length));
+                    Mem.Free(0x8F, roomState.Scroll, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Data.Length));
                 }
 
                 if (roomState.PLM > 0x8000)
@@ -136,18 +137,6 @@ namespace Crocomire
                 if (roomState.Pointer != 0xE5E6)
                     roomState.Pointer = Mem.Allocate(0x8F, 26);
 
-                /* create new blank scrolling data for testing purposes (only needed for z-factor) */
-                //if (roomState.Scroll > 0x8000)
-                //{
-                //    for (int y = 0; y < zfParlor.Height; y++)
-                //    {
-                //        for (int x = 0; x < zfParlor.Width; x++)
-                //        {
-                //            roomState.ScrollData[x, y] = 2;
-                //        }
-                //    }
-                //}
-
                 /* remove invalid enemies */
                 foreach (var enemy in roomState.EnemyPopList.ToList())
                 {
@@ -162,17 +151,20 @@ namespace Crocomire
                     }
                 }
 
-                //roomState.PLMList.Clear();
-
                 /* clear this out for now, we'll use it later to allocate correctly */
                 roomState.RoomData = 0;
-                roomState.EnemyPop = Mem.Allocate(0xA1, (18 * roomState.EnemyPopList.Count) + 3);
-                roomState.EnemySet = Mem.Allocate(0xB4, (6 * roomState.EnemySetList.Count) + 4);
-                roomState.FX1 = Mem.Allocate(0x83, 16);
-                //roomState.FX2 = 0x0000;
-                roomState.BGDataPtr = Mem.Allocate(0x8F, roomState.BGData.Sum(bgd => bgd.Size) + 2);
-                //roomState.LayerHandling = 0;
+                
+                if(roomState.EnemyPop > 0x8000)
+                    roomState.EnemyPop = Mem.Allocate(0xA1, (18 * roomState.EnemyPopList.Count) + 3);
 
+                if(roomState.EnemySet > 0x8000)
+                    roomState.EnemySet = Mem.Allocate(0xB4, (6 * roomState.EnemySetList.Count) + 4);
+                
+                if(roomState.FX1 > 0x8000)
+                    roomState.FX1 = Mem.Allocate(0x83, 16);
+
+                if(roomState.BGDataPtr > 0x8000)
+                    roomState.BGDataPtr = Mem.Allocate(0x8F, roomState.BGData.Sum(bgd => bgd.Size) + 2);
 
                 if (roomState.LayerHandlingCode != null && roomState.LayerHandlingCode.Length > 0)
                     roomState.LayerHandling = Mem.Allocate(0x8F, roomState.LayerHandlingCode.Length);
@@ -185,13 +177,28 @@ namespace Crocomire
                     bg.Pointer = Mem.Allocate(compressed.Length + 0x20);
                 }
 
-
-                if (roomState.Scroll > 0x0000)
+                if (roomState.Scroll > 0x0001)
                 {
-                    roomState.Scroll = Mem.Allocate(0x8F, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Length) + 4);
+                    roomState.Scroll = Mem.Allocate(0x8F, roomState.ScrollData.Length + roomState.ScrollMod.Sum(x => x.Data.Length) + 4);
+                    ushort ptr = (ushort)(roomState.Scroll + roomState.ScrollData.Length);
+                    foreach(var scrollMod in roomState.ScrollMod)
+                    {
+                        ushort oldPointer = scrollMod.Pointer;
+                        scrollMod.Pointer = ptr;
+
+                        /* update the plms that has this pointer */
+                        var plms = roomState.PLMList.Where(p => p.Command == 0xB703 && p.Args == oldPointer);
+                        foreach(var plm in plms)
+                        {
+                            plm.Args = scrollMod.Pointer;
+                        }
+                        ptr += (ushort)scrollMod.Data.Length;
+                    }
+                    
                 }
 
-                roomState.PLM = Mem.Allocate(0x8F, (6 * roomState.PLMList.Count) + 4);
+                if(roomState.PLM > 0x0000)
+                    roomState.PLM = Mem.Allocate(0x8F, (6 * roomState.PLMList.Count) + 4);
             }
 
             foreach (var roomState in room.RoomState)
@@ -215,6 +222,14 @@ namespace Crocomire
             /* check where the PLM bank is */
             _bReader.BaseStream.Seek(0x204AC, SeekOrigin.Begin);
             _plmBank = (int)_bReader.ReadByte();                
+
+            /* check for z-factor scroll bank (maybe other hacks later as well) */
+            _bReader.BaseStream.Seek(0x007FC0, SeekOrigin.Begin);
+            var romName = String.Join("", _bReader.ReadChars(0x15)).Trim();
+            if(romName == "M3 Z-Factor Hack")
+            {
+                _scrollBank = 0xE0;
+            }
 
             /* scan until we find a MDB header entry */
             for(int x = 0x8000; x < 0xFFFF; x++)
@@ -312,7 +327,7 @@ namespace Crocomire
                         if (roomState.Scroll > 0x0001 && roomState.Scroll != 0x8000)
                         {
                             /* read MDB Scroll data*/
-                            _bReader.BaseStream.Seek(0x070000 + roomState.Scroll, SeekOrigin.Begin);
+                            _bReader.BaseStream.Seek(Lunar.ToPC((uint)(_scrollBank<<16) + roomState.Scroll), SeekOrigin.Begin);
                             roomState.ScrollData = new byte[m.Width, m.Height];
                             for (int y = 0; y < m.Height; y++)
                             {
@@ -321,10 +336,34 @@ namespace Crocomire
                                     roomState.ScrollData[xx, y] = _bReader.ReadByte();
                                 }
                             }
-
-                            /* read MDB Scroll modifications */
+                        }
+                        
+                        /* read room PLMs */
+                        if (roomState.PLM != 0x0000)
+                        {
+                            _bReader.BaseStream.Seek(Lunar.ToPC((uint)(_plmBank<<16) + roomState.PLM), SeekOrigin.Begin);
                             while (true)
                             {
+                                ushort command = _bReader.ReadUInt16();
+                                if (command == 0x0000)
+                                    break;
+
+                                var plm = new PLM();
+                                plm.Command = command;
+                                plm.X = _bReader.ReadByte();
+                                plm.Y = _bReader.ReadByte();
+                                plm.Args = _bReader.ReadUInt16();
+
+                                roomState.PLMList.Add(plm);
+                            }
+                        }
+
+                        /* read MDB Scroll modifications */
+                        foreach(var plm in roomState.PLMList)
+                        {
+                            if(plm.Command == 0xB703)
+                            {
+                                _bReader.BaseStream.Seek(0x070000 + plm.Args, SeekOrigin.Begin);                                
                                 bool ok = false;
                                 byte[] tmp = new byte[100];
                                 int i = 0;
@@ -350,34 +389,13 @@ namespace Crocomire
 
                                 if (ok)
                                 {
-                                    byte[] scrollMod = new byte[i + 1];
-                                    Array.Copy(tmp, scrollMod, i + 1);
+                                    byte[] scrollModData = new byte[i + 1];
+                                    var scrollMod = new ScrollMod();
+                                    scrollMod.Pointer = plm.Args;                                    
+                                    Array.Copy(tmp, scrollModData, i + 1);
+                                    scrollMod.Data = scrollModData;
                                     roomState.ScrollMod.Add(scrollMod);
                                 }
-                                else
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        /* read room PLMs */
-                        if (roomState.PLM != 0x0000)
-                        {
-                            _bReader.BaseStream.Seek(Lunar.ToPC((uint)(_plmBank<<16) + roomState.PLM), SeekOrigin.Begin);
-                            while (true)
-                            {
-                                ushort command = _bReader.ReadUInt16();
-                                if (command == 0x0000)
-                                    break;
-
-                                var plm = new PLM();
-                                plm.Command = command;
-                                plm.X = _bReader.ReadByte();
-                                plm.Y = _bReader.ReadByte();
-                                plm.Args = _bReader.ReadUInt16();
-
-                                roomState.PLMList.Add(plm);
                             }
                         }
 
@@ -654,7 +672,8 @@ namespace Crocomire
 
                         foreach (var scrollMod in roomState.ScrollMod)
                         {
-                            _bWriter.Write(scrollMod);
+                            _bWriter.Seek(0x070000 + scrollMod.Pointer, SeekOrigin.Begin);
+                            _bWriter.Write(scrollMod.Data);
                         }
                     }
 

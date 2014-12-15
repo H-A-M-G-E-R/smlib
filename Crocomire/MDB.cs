@@ -109,7 +109,7 @@ namespace Crocomire
         public byte[,] ScrollData { get; set; }
         public List<BG> BGData { get; set; }
 
-        public List<byte[]> ScrollMod { get; set; }
+        public List<ScrollMod> ScrollMod { get; set; }
         public List<PLM> PLMList { get; set; }
         
         public FX1 FX1Data { get; set; }
@@ -119,7 +119,7 @@ namespace Crocomire
         public byte EnemiesToKill { get; set; }
         public RoomState()
         {
-            ScrollMod = new List<byte[]>();
+            ScrollMod = new List<ScrollMod>();
             PLMList = new List<PLM>();
             EnemyPopList = new List<EnemyPop>();
             EnemySetList = new List<EnemySet>();
@@ -129,6 +129,13 @@ namespace Crocomire
         }
     }
     
+    [Serializable()]
+    class ScrollMod
+    {
+        public ushort Pointer { get; set; }
+        public byte[] Data { get; set; }
+    }
+
     [Serializable()]
     class BG
     {
