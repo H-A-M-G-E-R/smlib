@@ -661,7 +661,7 @@ namespace Crocomire
                     if (roomState.Scroll > 0x0001 && roomState.Scroll != 0x8000)
                     {
                         /* write scroll data */
-                        _bWriter.Seek(0x070000 + roomState.Scroll, SeekOrigin.Begin);
+                        _bWriter.Seek((int)Lunar.ToPC((uint)(_scrollBank << 16) + roomState.Scroll), SeekOrigin.Begin);
                         for (int y = 0; y < room.Height; y++)
                         {
                             for (int x = 0; x < room.Width; x++)
