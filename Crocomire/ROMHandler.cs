@@ -445,7 +445,12 @@ namespace Crocomire
                         {
                             ushort select = _bReader.ReadUInt16();
                             if (select == 0xFFFF)
+                            {
+                                var fx1 = new FX1();
+                                fx1.Select = select;
+                                roomState.FX1Data = fx1;
                                 break;
+                            }
 
                             if(select == 0x0000 || m.DDB.Select(d => d.Pointer).Contains(select))
                             {
@@ -696,17 +701,20 @@ namespace Crocomire
                     {
                         _bWriter.Seek((int)Lunar.ToPC((uint)0x830000 + roomState.FX1), SeekOrigin.Begin);
                         _bWriter.Write(roomState.FX1Data.Select);
-                        _bWriter.Write(roomState.FX1Data.SurfaceStart);
-                        _bWriter.Write(roomState.FX1Data.SurfaceNew);
-                        _bWriter.Write(roomState.FX1Data.SurfaceSpeed);
-                        _bWriter.Write(roomState.FX1Data.SurfaceDelay);
-                        _bWriter.Write(roomState.FX1Data.Layer3Type);
-                        _bWriter.Write(roomState.FX1Data.A);
-                        _bWriter.Write(roomState.FX1Data.B);
-                        _bWriter.Write(roomState.FX1Data.C);
-                        _bWriter.Write(roomState.FX1Data.PaletteFX);
-                        _bWriter.Write(roomState.FX1Data.AnimateTile);
-                        _bWriter.Write(roomState.FX1Data.Blend);
+                        if (roomState.FX1Data.Select != 0xFFFF)
+                        {
+                            _bWriter.Write(roomState.FX1Data.SurfaceStart);
+                            _bWriter.Write(roomState.FX1Data.SurfaceNew);
+                            _bWriter.Write(roomState.FX1Data.SurfaceSpeed);
+                            _bWriter.Write(roomState.FX1Data.SurfaceDelay);
+                            _bWriter.Write(roomState.FX1Data.Layer3Type);
+                            _bWriter.Write(roomState.FX1Data.A);
+                            _bWriter.Write(roomState.FX1Data.B);
+                            _bWriter.Write(roomState.FX1Data.C);
+                            _bWriter.Write(roomState.FX1Data.PaletteFX);
+                            _bWriter.Write(roomState.FX1Data.AnimateTile);
+                            _bWriter.Write(roomState.FX1Data.Blend);
+                        }
                     }
 
                     /* write enemy pop */
