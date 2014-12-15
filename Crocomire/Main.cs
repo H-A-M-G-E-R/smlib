@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SMLib;
 
 namespace Crocomire
 {
@@ -61,6 +62,7 @@ namespace Crocomire
             txtWidth.Text = room.Width.ToString();
             txtHeight.Text = room.Height.ToString();
             txtRegion.Text = room.Region.ToString();
+            txtName.Text = room.Name != null ? room.Name : "";
 
             var dsBindingList = new BindingList<DDB>(room.DDB);
             var dsBindingSource = new BindingSource(dsBindingList, null);
@@ -248,36 +250,6 @@ namespace Crocomire
             {
                 string fileName = fileDialog.FileName;
                 var room = MDB.Load(fileName);
-
-                /* wipe out all the pointers for this room */
-                //room.RoomAddress = 0xFFFF;
-                //room.DoorOut = 0xFFFF;
-                //foreach(var roomState in room.RoomState)
-                //{
-                //    if (roomState.BGDataPtr > 0)
-                //        roomState.BGDataPtr = 0xFFFF;
-                //    if (roomState.EnemyPop > 0)
-                //        roomState.EnemyPop = 0xFFFF;
-                //    if (roomState.EnemySet > 0)
-                //        roomState.EnemySet = 0xFFFF;
-                //    if (roomState.FX1 > 0)
-                //        roomState.FX1 = 0xFFFF;
-                //    if (roomState.LayerHandling > 0)
-                //        roomState.LayerHandling = 0xFFFF;
-                //    if (roomState.RoomData > 0)
-                //        roomState.RoomData = 0xFFFFFF;
-                //    if (roomState.PLM > 0)
-                //        roomState.PLM = 0xFFFF;
-                //    if(roomState.Scroll > 0)
-                //        roomState.Scroll = 0xFFFF;
-                //    if(roomState.Pointer != 0xE5E6)
-                //        roomState.Pointer = 0xFFFF;
-                //}
-                
-                //foreach(var ddb in room.DDB)
-                //{
-                //    ddb.Pointer = 0xFFFF;
-                //}
 
                 refreshRoom(room);
                 btnAddRoom.Visible = true;

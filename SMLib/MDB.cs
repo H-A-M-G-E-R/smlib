@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 
-namespace Crocomire
+namespace SMLib
 {
     [Serializable()]
-    class MDB
+    public class MDB
     {
         public ushort RoomAddress { get; set; }
         public string RoomId { get; set; }
@@ -77,14 +77,14 @@ namespace Crocomire
     }
 
     [Serializable()]
-    class StateSelect
+    public class StateSelect
     {
         public ushort RoomState { get; set; }
 
     }
 
     [Serializable()]
-    class RoomState
+    public class RoomState
     {
         public ushort TestCode { get; set; }
         public byte TestValue { get; set; }
@@ -130,14 +130,14 @@ namespace Crocomire
     }
     
     [Serializable()]
-    class ScrollMod
+    public class ScrollMod
     {
         public ushort Pointer { get; set; }
         public byte[] Data { get; set; }
     }
 
     [Serializable()]
-    class BG
+    public class BG
     {
         public ushort Header {get; set; }
         public uint Pointer { get; set; }
@@ -147,7 +147,7 @@ namespace Crocomire
     }
 
     [Serializable()]
-    class PLM
+    public class PLM
     {
         public ushort Command { get; set; }
         public byte X { get; set; }
@@ -156,7 +156,7 @@ namespace Crocomire
     }
 
     [Serializable()]
-    class DDB
+    public class DDB
     {
         public ushort Pointer { get; set; }
         public ushort RoomId { get; set; }
@@ -172,7 +172,7 @@ namespace Crocomire
     }
 
     [Serializable()]
-    class EnemyPop
+    public class EnemyPop
     {
         public ushort EnemyData { get; set; }
         public ushort X { get; set; }
@@ -185,14 +185,14 @@ namespace Crocomire
     }
 
     [Serializable()]
-    class EnemySet
+    public class EnemySet
     {
         public ushort EnemyUsed { get; set; }
         public ushort Palette { get; set; }
     }
 
     [Serializable()]
-    class FX1
+    public class FX1
     {
         public ushort Select { get; set; }
         public ushort SurfaceStart { get; set; }
@@ -209,7 +209,7 @@ namespace Crocomire
     }
 
     [Serializable()]
-    class LevelData
+    public class LevelData
     {
         public int Width { get; set; }
         public int Height { get; set; }

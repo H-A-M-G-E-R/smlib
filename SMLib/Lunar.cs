@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-namespace Crocomire
+namespace SMLib
 {
-    class Lunar
+    public class Lunar
     {
         [DllImport("Lunar Compress.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern bool LunarOpenFile(string FileName, uint FileMode);

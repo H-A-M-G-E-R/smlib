@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Crocomire
+namespace SMLib
 {
-    class Disassembler
+    public class Disassembler
     {
         private int acc = 0;
         private int index = 0;

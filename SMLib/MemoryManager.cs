@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Crocomire
+namespace SMLib
 {
-    class MemoryManager
+    public class MemoryManager
     {
         public Dictionary<int, List<Segment>> FreeMemory {get; set;}
         
@@ -152,7 +152,7 @@ namespace Crocomire
         }
     }
 
-    class Segment
+    public class Segment
     {
         public ushort Start {get; set;}
         public ushort End {get; set;}

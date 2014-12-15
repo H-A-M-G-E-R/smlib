@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace Crocomire
+namespace SMLib
 {
-    class ROMHandler
+    public class ROMHandler
     {
         private string _fileName;
         private int _plmBank = 0x8F;
@@ -241,6 +241,7 @@ namespace Crocomire
                     /* read the MDB header data */
                     var m = new MDB();
                     m.RoomId = String.Format("{0:X}", 0x070000 + x);
+                    m.Name = m.RoomId;
                     m.RoomAddress = (ushort)x;
                     m.Unknown1 = data[0];
                     m.Region = data[1];
