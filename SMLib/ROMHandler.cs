@@ -232,11 +232,12 @@ namespace SMLib
             }
 
             /* scan until we find a MDB header entry */
-            for(int x = 0x8000; x < 0xFFFF; x++)
+            for (int x = 0x8000; x < 0xFFFF; x++)
             {
                 _bReader.BaseStream.Seek(0x070000 + x, SeekOrigin.Begin);
-                data =_bReader.ReadBytes(11);
-                if(data[7] == 0xA0 && data[8] < 0x05 && (data[6] == 0x70 || data[6] == 0x90 || data[6] == 0xA0))
+                data = _bReader.ReadBytes(14);
+                //if(data[7] == 0xA0 && data[8] < 0x05 && (data[6] == 0x70 || data[6] == 0x90 || data[6] == 0xA0))
+                if((data[12] == 0xE5 || data[12] == 0xE6) && data[1] < 6 && (data[4] != 0 && data[4] < 20) && (data[5] != 0 && data[5] < 20) && data[6] != 0 && data[7] != 0 && data[9] != 0 && data[10] != 0)
                 {
                     /* read the MDB header data */
                     var m = new MDB();
@@ -252,7 +253,7 @@ namespace SMLib
                     m.Unknown2 = data[6];
                     m.Unknown3 = data[7];
                     m.Unknown4 = data[8];
-                    _bReader.BaseStream.Seek(-2, SeekOrigin.Current);
+                    _bReader.BaseStream.Seek(-5, SeekOrigin.Current);
                     m.DoorOut = _bReader.ReadUInt16();
                     
                     /* read MDB stateselect */
