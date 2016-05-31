@@ -28,6 +28,8 @@ namespace SMLib
         public void Read()
         {
             _bReader = new BinaryReader(new FileStream(_fileName, FileMode.Open));
+            Mem = new MemoryManager(_bReader.ReadBytes((int)_bReader.BaseStream.Length));
+            _bReader.BaseStream.Seek(0, SeekOrigin.Begin);
             ReadMDB();
             _bReader.Close();
         }
@@ -237,7 +239,7 @@ namespace SMLib
                 _bReader.BaseStream.Seek(0x070000 + x, SeekOrigin.Begin);
                 data = _bReader.ReadBytes(14);
                 //if(data[7] == 0xA0 && data[8] < 0x05 && (data[6] == 0x70 || data[6] == 0x90 || data[6] == 0xA0))
-                if((data[12] == 0xE5 || data[12] == 0xE6) && data[1] < 6 && (data[4] != 0 && data[4] < 20) && (data[5] != 0 && data[5] < 20) && data[6] != 0 && data[7] != 0 && data[9] != 0 && data[10] != 0)
+                if((data[12] == 0xE5 || data[12] == 0xE6) && data[1] < 8 && (data[4] != 0 && data[4] < 20) && (data[5] != 0 && data[5] < 20) && data[6] != 0 && data[7] != 0 && data[8] < 0x10 && data[10] > 0x7F)
                 {
                     /* read the MDB header data */
                     var m = new MDB();
@@ -262,6 +264,9 @@ namespace SMLib
                     ushort testCode = _bReader.ReadUInt16();
                     while(testCode != 0xE5E6)
                     {
+                        if (testCode == 0xFFFF)
+                            break;
+
                         byte testValue = 0;
                         ushort testValueDoor = 0;
 
@@ -282,6 +287,9 @@ namespace SMLib
 
                         testCode = _bReader.ReadUInt16();
                     }
+
+                    if (testCode == 0xFFFF)
+                        continue;
 
                     var ds = new RoomState();
                     ds.TestCode = 0xE5E6;
@@ -549,13 +557,23 @@ namespace SMLib
 
                     /* read MDB DoorOut */
                     _bReader.BaseStream.Seek(0x070000 + m.DoorOut, SeekOrigin.Begin);
-                    int doors = (m.RoomState[0].LevelData.Doors.Count > 0 ? m.RoomState[0].LevelData.Doors.Max(d => d.Block.BTS) + 1 : 0);
-                    for (int i = 0; i < doors; i++)
+                    //int doors = (m.RoomState[0].LevelData.Doors.Count > 0 ? m.RoomState[0].LevelData.Doors.Max(d => d.Block.BTS) + 1 : 0);
+                    //for (int i = 0; i < doors; i++)
+                    //{
+                    //    ushort pointer = _bReader.ReadUInt16();
+                    //    var ddb = new DDB();
+                    //    ddb.Pointer = pointer;
+                    //    m.DDB.Add(ddb);
+                    //}
+
+                    /* read MDB DoorOut (SMILE-like) */
+                    ushort doorPointer = _bReader.ReadUInt16();
+                    while (doorPointer > 0x8000)
                     {
-                        ushort pointer = _bReader.ReadUInt16();
                         var ddb = new DDB();
-                        ddb.Pointer = pointer;
+                        ddb.Pointer = doorPointer;
                         m.DDB.Add(ddb);
+                        doorPointer = _bReader.ReadUInt16();
                     }
 
                     /* read DDB Doorout */

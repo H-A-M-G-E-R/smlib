@@ -28,6 +28,65 @@ namespace SMLib
                 FreeMemory.Add(b, new List<Segment>() { new Segment(0x0000, 0xFFFF) });
         }
 
+        public MemoryManager(byte[] romData)
+        {
+            FreeMemory = new Dictionary<int, List<Segment>>();
+            uint startPos = 0;
+            int length = 0;
+
+            /* Scan the ROM for free space */
+            for(uint p = 0; p < (uint)romData.Length; p++)
+            {
+                byte b = romData[p];
+                if(b == 0xFF)
+                {
+                    if (length == 0)
+                    {
+                        startPos = p;
+                        length = 1;
+                    } else
+                    {
+                        length++;
+                    }
+                }
+                else
+                {
+                    if(length > 7)
+                    {
+                        /* only allocate free blocks of 8 bytes or more */
+                        uint fullAddr = Lunar.ToSNES(startPos);
+                        uint bank = fullAddr >> 16;
+                        uint addr = fullAddr & 0xFFFF;
+                        if(FreeMemory.ContainsKey((int)bank))
+                        {
+                            FreeMemory[(int)bank].Add(new Segment((ushort)addr, (ushort)(addr + (length-1))));
+                        }
+                        else
+                        {
+                            FreeMemory.Add((int)bank, new List<Segment> { new Segment((ushort)addr, (ushort)(addr + (length - 1))) });
+                        }
+                    }
+                    length = 0;
+                }
+            }
+
+            if (length > 7)
+            {
+                /* only allocate free blocks of 8 bytes or more */
+                uint fullAddr = Lunar.ToSNES(startPos);
+                uint bank = fullAddr >> 16;
+                uint addr = fullAddr & 0xFFFF;
+                if (FreeMemory.ContainsKey((int)bank))
+                {
+                    FreeMemory[(int)bank].Add(new Segment((ushort)addr, (ushort)(addr + (length - 1))));
+                }
+                else
+                {
+                    FreeMemory.Add((int)bank, new List<Segment> { new Segment((ushort)addr, (ushort)(addr + (length - 1))) });
+                }
+            }
+        }
+
         /* allocate anywhere */
         public uint Allocate(int size)
         {

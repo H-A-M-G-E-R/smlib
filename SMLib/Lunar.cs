@@ -30,6 +30,9 @@ namespace SMLib
         [DllImport("Lunar Compress.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern uint LunarSNEStoPC(uint Pointer, uint ROMType, uint Header);
 
+        [DllImport("Lunar Compress.dll", CallingConvention = CallingConvention.StdCall)]
+        private static extern uint LunarPCtoSNES(uint Pointer, uint ROMType, uint Header);
+
         public static void ExpandROM(string fileName, uint size)
         {
             LunarOpenFile(fileName, 1);
@@ -40,6 +43,11 @@ namespace SMLib
         public static uint ToPC(uint pointer)
         {
             return LunarSNEStoPC(pointer, 1, 0);
+        }
+
+        public static uint ToSNES(uint pointer)
+        {
+            return 0x800000 + LunarPCtoSNES(pointer, 1, 0);
         }
 
         public static byte[] Compress(byte[] data)

@@ -58,25 +58,26 @@
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.dgvDDB = new System.Windows.Forms.DataGridView();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.dgvRoomStates = new System.Windows.Forms.DataGridView();
-            this.dgvPLM = new System.Windows.Forms.DataGridView();
-            this.dgvEnemySet = new System.Windows.Forms.DataGridView();
-            this.dgvEnemyPop = new System.Windows.Forms.DataGridView();
-            this.label9 = new System.Windows.Forms.Label();
-            this.label10 = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
+            this.label10 = new System.Windows.Forms.Label();
+            this.label9 = new System.Windows.Forms.Label();
+            this.dgvEnemyPop = new System.Windows.Forms.DataGridView();
+            this.dgvEnemySet = new System.Windows.Forms.DataGridView();
+            this.dgvPLM = new System.Windows.Forms.DataGridView();
+            this.dgvRoomStates = new System.Windows.Forms.DataGridView();
             this.btnAddRoom = new System.Windows.Forms.Button();
             this.btnDelete = new System.Windows.Forms.Button();
+            this.btnWriteMDB = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDDB)).BeginInit();
             this.groupBox2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvRoomStates)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvPLM)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvEnemySet)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvEnemyPop)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvEnemySet)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvPLM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvRoomStates)).BeginInit();
             this.SuspendLayout();
             // 
             // pictureBox1
@@ -369,42 +370,32 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Room States";
             // 
-            // dgvRoomStates
+            // label11
             // 
-            this.dgvRoomStates.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dgvRoomStates.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvRoomStates.Location = new System.Drawing.Point(6, 19);
-            this.dgvRoomStates.MultiSelect = false;
-            this.dgvRoomStates.Name = "dgvRoomStates";
-            this.dgvRoomStates.RowHeadersWidth = 20;
-            this.dgvRoomStates.Size = new System.Drawing.Size(813, 88);
-            this.dgvRoomStates.TabIndex = 1;
-            this.dgvRoomStates.CellParsing += new System.Windows.Forms.DataGridViewCellParsingEventHandler(this.dgvRoomStates_CellParsing);
-            this.dgvRoomStates.SelectionChanged += new System.EventHandler(this.dgvRoomStates_SelectionChanged);
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(358, 110);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(91, 13);
+            this.label11.TabIndex = 7;
+            this.label11.Text = "Enemy population";
             // 
-            // dgvPLM
+            // label10
             // 
-            this.dgvPLM.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dgvPLM.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvPLM.Location = new System.Drawing.Point(6, 126);
-            this.dgvPLM.MultiSelect = false;
-            this.dgvPLM.Name = "dgvPLM";
-            this.dgvPLM.RowHeadersWidth = 20;
-            this.dgvPLM.Size = new System.Drawing.Size(229, 112);
-            this.dgvPLM.TabIndex = 2;
-            this.dgvPLM.CellParsing += new System.Windows.Forms.DataGridViewCellParsingEventHandler(this.dgvPLM_CellParsing);
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(238, 110);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(56, 13);
+            this.label10.TabIndex = 6;
+            this.label10.Text = "Enemy set";
             // 
-            // dgvEnemySet
+            // label9
             // 
-            this.dgvEnemySet.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dgvEnemySet.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvEnemySet.Location = new System.Drawing.Point(241, 126);
-            this.dgvEnemySet.MultiSelect = false;
-            this.dgvEnemySet.Name = "dgvEnemySet";
-            this.dgvEnemySet.RowHeadersWidth = 20;
-            this.dgvEnemySet.Size = new System.Drawing.Size(114, 112);
-            this.dgvEnemySet.TabIndex = 3;
-            this.dgvEnemySet.CellParsing += new System.Windows.Forms.DataGridViewCellParsingEventHandler(this.dgvEnemySet_CellParsing);
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(6, 110);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(34, 13);
+            this.label9.TabIndex = 5;
+            this.label9.Text = "PLMs";
             // 
             // dgvEnemyPop
             // 
@@ -418,32 +409,42 @@
             this.dgvEnemyPop.TabIndex = 4;
             this.dgvEnemyPop.CellParsing += new System.Windows.Forms.DataGridViewCellParsingEventHandler(this.dgvEnemyPop_CellParsing);
             // 
-            // label9
+            // dgvEnemySet
             // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(6, 110);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(34, 13);
-            this.label9.TabIndex = 5;
-            this.label9.Text = "PLMs";
+            this.dgvEnemySet.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvEnemySet.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvEnemySet.Location = new System.Drawing.Point(241, 126);
+            this.dgvEnemySet.MultiSelect = false;
+            this.dgvEnemySet.Name = "dgvEnemySet";
+            this.dgvEnemySet.RowHeadersWidth = 20;
+            this.dgvEnemySet.Size = new System.Drawing.Size(114, 112);
+            this.dgvEnemySet.TabIndex = 3;
+            this.dgvEnemySet.CellParsing += new System.Windows.Forms.DataGridViewCellParsingEventHandler(this.dgvEnemySet_CellParsing);
             // 
-            // label10
+            // dgvPLM
             // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(238, 110);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(56, 13);
-            this.label10.TabIndex = 6;
-            this.label10.Text = "Enemy set";
+            this.dgvPLM.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvPLM.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvPLM.Location = new System.Drawing.Point(6, 126);
+            this.dgvPLM.MultiSelect = false;
+            this.dgvPLM.Name = "dgvPLM";
+            this.dgvPLM.RowHeadersWidth = 20;
+            this.dgvPLM.Size = new System.Drawing.Size(229, 112);
+            this.dgvPLM.TabIndex = 2;
+            this.dgvPLM.CellParsing += new System.Windows.Forms.DataGridViewCellParsingEventHandler(this.dgvPLM_CellParsing);
             // 
-            // label11
+            // dgvRoomStates
             // 
-            this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(358, 110);
-            this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(91, 13);
-            this.label11.TabIndex = 7;
-            this.label11.Text = "Enemy population";
+            this.dgvRoomStates.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvRoomStates.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvRoomStates.Location = new System.Drawing.Point(6, 19);
+            this.dgvRoomStates.MultiSelect = false;
+            this.dgvRoomStates.Name = "dgvRoomStates";
+            this.dgvRoomStates.RowHeadersWidth = 20;
+            this.dgvRoomStates.Size = new System.Drawing.Size(813, 88);
+            this.dgvRoomStates.TabIndex = 1;
+            this.dgvRoomStates.CellParsing += new System.Windows.Forms.DataGridViewCellParsingEventHandler(this.dgvRoomStates_CellParsing);
+            this.dgvRoomStates.SelectionChanged += new System.EventHandler(this.dgvRoomStates_SelectionChanged);
             // 
             // btnAddRoom
             // 
@@ -466,12 +467,23 @@
             this.btnDelete.UseVisualStyleBackColor = true;
             this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
             // 
+            // btnWriteMDB
+            // 
+            this.btnWriteMDB.Location = new System.Drawing.Point(548, 12);
+            this.btnWriteMDB.Name = "btnWriteMDB";
+            this.btnWriteMDB.Size = new System.Drawing.Size(80, 33);
+            this.btnWriteMDB.TabIndex = 23;
+            this.btnWriteMDB.Text = "Save MDB";
+            this.btnWriteMDB.UseVisualStyleBackColor = true;
+            this.btnWriteMDB.Click += new System.EventHandler(this.btnWriteMDB_Click);
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlDarkDark;
             this.ClientSize = new System.Drawing.Size(861, 746);
+            this.Controls.Add(this.btnWriteMDB);
             this.Controls.Add(this.btnDelete);
             this.Controls.Add(this.btnAddRoom);
             this.Controls.Add(this.btnImport);
@@ -492,10 +504,10 @@
             ((System.ComponentModel.ISupportInitialize)(this.dgvDDB)).EndInit();
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvRoomStates)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvPLM)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvEnemySet)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvEnemyPop)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvEnemySet)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvPLM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvRoomStates)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -541,6 +553,7 @@
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.Button btnAddRoom;
         private System.Windows.Forms.Button btnDelete;
+        private System.Windows.Forms.Button btnWriteMDB;
     }
 }
 

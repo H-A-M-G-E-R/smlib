@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SMLib;
+using System.IO;
 
 namespace Crocomire
 {
@@ -287,7 +288,7 @@ namespace Crocomire
         {
             if (dgvRoomStates.Columns[e.ColumnIndex].DefaultCellStyle.Format == "X04")
             {
-                e.Value = Convert.ToUInt16(e.Value.ToString(), 16);
+                e.Value = Convert.ToUInt32(e.Value.ToString(), 16);
                 e.ParsingApplied = true;
             }
         }
@@ -331,6 +332,37 @@ namespace Crocomire
                 }
             }
             refreshRoomList();
+        }
+
+        private void btnWriteMDB_Click(object sender, EventArgs e)
+        {
+            using (var file = new StreamWriter(@"E:\mdb.txt"))
+            {
+                foreach (var room in handler.MDBList.OrderBy(r => r.RoomId))
+                {
+                    file.WriteLine(room.RoomId);
+                }
+            }
+
+            var levelEntries = new List<uint>();
+            foreach(var room in handler.MDBList)
+            {
+                foreach(var state in room.RoomState)
+                {
+                    if(!levelEntries.Contains(state.RoomData))
+                    {
+                        levelEntries.Add(state.RoomData);
+                    }
+                }
+            }
+
+            using (var file = new StreamWriter(@"E:\level_entries.txt"))
+            {
+                foreach(var entry in levelEntries.OrderBy(l => l))
+                {
+                    file.WriteLine(String.Format("{0:X}", SMLib.Lunar.ToPC(entry)));
+                }
+            }
         }
     }
 }
