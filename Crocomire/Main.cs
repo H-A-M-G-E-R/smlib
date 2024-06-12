@@ -4,11 +4,10 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using SMLib;
 using System.IO;
+using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace Crocomire
 {
@@ -229,8 +228,8 @@ namespace Crocomire
                 MessageBox.Show("No room selected for export");
                 return;
             }
-            var fileSaveDialog = new FolderBrowserDialog();
-            if(fileSaveDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var fileSaveDialog = new CommonOpenFileDialog() { IsFolderPicker = true };
+            if(fileSaveDialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
                 foreach(ListViewItem listViewItem in lvRooms.CheckedItems)
                 {
@@ -238,7 +237,7 @@ namespace Crocomire
                     var room = handler.MDBList.Where(r => r.RoomId == roomId).FirstOrDefault();
                     if(room != null)
                     {
-                        room.Save(fileSaveDialog.SelectedPath);
+                        room.Save(fileSaveDialog.FileName);
                     }
                 }
             }
